@@ -1,0 +1,123 @@
+{
+  "title": "Adaptive Volume",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Adaptive Volume",
+        "description": "One instance per speaker group, each with its own schedule.",
+        "data": {
+          "name": "Name",
+          "players": "Speakers"
+        },
+        "data_description": {
+          "name": "e.g. Living room",
+          "players": "Media players this instance looks after."
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "{error}",
+        "data": {
+          "mode": "Schedule mode",
+          "points": "Schedule",
+          "idle_gap": "Idle gap",
+          "skip_sources": "Skip sources",
+          "quiet_volume": "Quiet volume",
+          "quiet_entity": "Quiet when this entity…",
+          "quiet_state": "…is in this state",
+          "cap_enabled": "Night cap",
+          "cap_start": "Cap starts",
+          "cap_end": "Cap ends",
+          "cap_volume": "Cap volume"
+        },
+        "data_description": {
+          "mode": "Smooth curve: the volume glides between points. Steps: each point's volume holds until the next.",
+          "points": "One point per line: a time and a volume. Times can be a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15",
+          "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume. Shorter pauses keep your volume.",
+          "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
+          "quiet_volume": "Volume while quiet is on (the Quiet switch, or the linked entity). Also the maximum while quiet.",
+          "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below (e.g. a night-mode switch, or an input_select).",
+          "quiet_state": "The state that means quiet (default on).",
+          "cap_enabled": "During cap hours, turning a speaker above the cap volume pulls it straight back to the cap.",
+          "cap_volume": "The maximum during cap hours. Fresh starts never go above it either."
+        }
+      }
+    },
+    "error": {
+      "bad_schedule": "The schedule couldn't be read: {error}"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adaptive Volume settings",
+        "description": "{error}",
+        "data": {
+          "players": "Speakers",
+          "mode": "Schedule mode",
+          "points": "Schedule",
+          "idle_gap": "Idle gap",
+          "skip_sources": "Skip sources",
+          "quiet_volume": "Quiet volume",
+          "quiet_entity": "Quiet when this entity…",
+          "quiet_state": "…is in this state",
+          "cap_enabled": "Night cap",
+          "cap_start": "Cap starts",
+          "cap_end": "Cap ends",
+          "cap_volume": "Cap volume"
+        },
+        "data_description": {
+          "players": "Media players this instance looks after.",
+          "mode": "Smooth curve: the volume glides between points. Steps: each point's volume holds until the next.",
+          "points": "One point per line: a time and a volume. Times can be a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15",
+          "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume. Shorter pauses keep your volume.",
+          "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
+          "quiet_volume": "Volume while quiet is on (the Quiet switch, or the linked entity). Also the maximum while quiet.",
+          "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below (e.g. a night-mode switch, or an input_select).",
+          "quiet_state": "The state that means quiet (default on).",
+          "cap_enabled": "During cap hours, turning a speaker above the cap volume pulls it straight back to the cap.",
+          "cap_volume": "The maximum during cap hours. Fresh starts never go above it either."
+        }
+      }
+    },
+    "error": {
+      "bad_schedule": "The schedule couldn't be read: {error}"
+    }
+  },
+  "selector": {
+    "mode": {
+      "options": {
+        "curve": "Smooth curve",
+        "steps": "Steps"
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "enabled": {
+        "name": "Adaptive volume"
+      },
+      "quiet": {
+        "name": "Quiet"
+      }
+    },
+    "sensor": {
+      "target": {
+        "name": "Target volume"
+      }
+    },
+    "number": {
+      "quiet_volume": {
+        "name": "Quiet volume"
+      },
+      "cap_volume": {
+        "name": "Cap volume"
+      }
+    },
+    "button": {
+      "apply": {
+        "name": "Apply volume now"
+      }
+    }
+  }
+}

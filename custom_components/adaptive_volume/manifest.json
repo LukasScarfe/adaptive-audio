@@ -1,0 +1,13 @@
+{
+  "domain": "adaptive_volume",
+  "name": "Adaptive Volume",
+  "codeowners": ["@LukasScarfe"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/LukasScarfe/ha-adaptive-volume",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/LukasScarfe/ha-adaptive-volume/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
