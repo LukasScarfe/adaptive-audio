@@ -3,9 +3,13 @@
 Rules:
 - A player that starts playing after `idle_gap` minutes of not playing gets the start volume:
   the quiet volume while quiet is active, else the schedule's target, never above the cap.
-- Mid-play the volume is left alone, except that a change above the cap is pulled back to
-  the cap (during cap hours, or at any time while quiet is active, when the cap is the
-  quiet volume). Turning quiet on pulls playing players down to the quiet volume.
+- With "Adapt while playing" on, every minute a playing player moves toward that volume by at
+  most `adapt_step` %. A hand change (any volume change Adaptive Volume didn't make) stops
+  adapting that player until its next fresh start, or for `autoreset` minutes if that is set.
+- With it off, the volume is left alone mid-play.
+- Either way, a raise above the cap is pulled back to the cap (during cap hours, or at any time
+  while quiet is active, when the cap is the quiet volume). Turning quiet on pulls playing
+  players down to the quiet volume.
 - A player whose source is in `skip_sources` (e.g. the turntable's Line In) is never touched.
 """
 
@@ -13,7 +17,8 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from typing import Any
 
 from homeassistant.components.media_player import (
     ATTR_INPUT_SOURCE,
@@ -24,10 +29,10 @@ from homeassistant.components.media_player import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_ENTITY_ID,
+    STATE_OFF,
     STATE_PLAYING,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
-    STATE_OFF,
     SUN_EVENT_SUNRISE,
     SUN_EVENT_SUNSET,
 )
@@ -36,24 +41,37 @@ from homeassistant.helpers.event import async_track_state_change_event, async_tr
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
-from . import schedule
+from . import curve, schedule
 from .const import (
+    CONF_ADAPT_STEP,
+    CONF_AUTORESET,
     CONF_CAP_ENABLED,
     CONF_CAP_END,
     CONF_CAP_START,
     CONF_CAP_VOLUME,
     CONF_IDLE_GAP,
-    CONF_MODE,
     CONF_PLAYERS,
-    CONF_POINTS,
     CONF_QUIET_ENTITY,
     CONF_QUIET_STATE,
     CONF_QUIET_VOLUME,
     CONF_SKIP_SOURCES,
-    DEFAULTS,
 )
 
 _LOGGER = logging.getLogger(__name__)
+_TOLERANCE = 0.015  # volume levels this close count as "the one we set"
+
+
+def sun_minutes(hass: HomeAssistant, day: date) -> tuple[int | None, int | None]:
+    """Local sunrise and sunset (minutes after midnight) for a date."""
+    out = []
+    for event in (SUN_EVENT_SUNRISE, SUN_EVENT_SUNSET):
+        when = get_astral_event_date(hass, event, day)
+        if when is None:
+            out.append(None)
+        else:
+            local = dt_util.as_local(when)
+            out.append(local.hour * 60 + local.minute)
+    return out[0], out[1]
 
 
 class AdaptiveVolumeController:
@@ -62,25 +80,26 @@ class AdaptiveVolumeController:
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
         self.entry = entry
-        self.enabled = True  # set by the Enabled switch when it restores
-        self.quiet_switch = False  # set by the Quiet switch when it restores
+        self.enabled = True  # restored by the switches
+        self.quiet_switch = False
+        self.adapt = False
         self.last_applied: dict[str, dict] = {}
+        self.manual: dict[str, datetime] = {}  # players a hand change has taken over
+        self._expected: dict[str, float] = {}  # the level we last set per player
         self._stopped_at: dict[str, datetime | None] = {}
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[Callable[[], None]] = []
         self._was_quiet = False
-        try:
-            self.points = schedule.parse_points(self.opt(CONF_POINTS))
-            self.schedule_error: str | None = None
-        except schedule.ScheduleError as err:
-            self.points = []
-            self.schedule_error = str(err)
-            _LOGGER.error("%s: bad schedule: %s", entry.title, err)
+        self._fn_day: date | None = None
+        self._fn: Callable[[int], float] | None = None
+        self.marks: list[dict[str, Any]] = []
+        self.schedule_error: str | None = None
+        self._build()
 
     # ---- options -------------------------------------------------------------------------
 
     def opt(self, key: str):
-        return self.entry.options.get(key, DEFAULTS.get(key))
+        return curve.opt(self.entry.options, key)
 
     @property
     def players(self) -> list[str]:
@@ -97,18 +116,13 @@ class AdaptiveVolumeController:
     def async_start(self) -> None:
         for pid in self.players:
             st = self.hass.states.get(pid)
-            # Not playing now: count the gap from when its state last changed.
             self._stopped_at[pid] = None if st is None or st.state == STATE_PLAYING else st.last_changed
-        self._unsubs.append(
-            async_track_state_change_event(self.hass, self.players, self._on_player)
-        )
+        self._unsubs.append(async_track_state_change_event(self.hass, self.players, self._on_player))
         if quiet_entity := self.opt(CONF_QUIET_ENTITY):
             self._unsubs.append(
                 async_track_state_change_event(self.hass, [quiet_entity], self._on_quiet_entity)
             )
-        self._unsubs.append(
-            async_track_time_interval(self.hass, self._on_tick, timedelta(minutes=1))
-        )
+        self._unsubs.append(async_track_time_interval(self.hass, self._on_tick, timedelta(minutes=1)))
         self._was_quiet = self.quiet_active
 
     @callback
@@ -126,35 +140,41 @@ class AdaptiveVolumeController:
         for cb in list(self._listeners):
             cb()
 
-    # ---- what the volume should be -------------------------------------------------------
+    # ---- the schedule --------------------------------------------------------------------
+
+    def _build(self) -> None:
+        """(Re)build today's volume function; sun anchors move daily."""
+        today = dt_util.now().date()
+        self._fn_day = today
+        try:
+            rise = set_ = None
+            if curve.uses_sun(self.entry.options):
+                rise, set_ = sun_minutes(self.hass, today)
+            self._fn, self.marks = curve.builder(self.entry.options, rise, set_)
+            self.schedule_error = None
+        except schedule.ScheduleError as err:
+            self._fn, self.marks = None, []
+            self.schedule_error = str(err)
+            _LOGGER.warning("%s: schedule can't be used: %s", self.entry.title, err)
 
     def _now_minutes(self) -> int:
         now = dt_util.now()
         return now.hour * 60 + now.minute
 
-    def _sun_minutes(self, event: str) -> int | None:
-        when = get_astral_event_date(self.hass, event, dt_util.now().date())
-        if when is None:
-            return None
-        local = dt_util.as_local(when)
-        return local.hour * 60 + local.minute
+    @property
+    def fn(self) -> Callable[[int], float] | None:
+        if self._fn_day != dt_util.now().date():
+            self._build()
+        return self._fn
 
     @property
     def target(self) -> float | None:
-        """The schedule's volume now (percent), or None if the schedule is broken."""
-        if not self.points:
-            return None
-        sunrise = sunset = None
-        if schedule.uses_sun(self.points):
-            sunrise = self._sun_minutes(SUN_EVENT_SUNRISE)
-            sunset = self._sun_minutes(SUN_EVENT_SUNSET)
-        try:
-            return schedule.target_volume(
-                self._now_minutes(), self.points, self.opt(CONF_MODE), sunrise, sunset
-            )
-        except schedule.ScheduleError as err:
-            _LOGGER.warning("%s: %s", self.entry.title, err)
-            return None
+        fn = self.fn
+        return None if fn is None else fn(self._now_minutes())
+
+    def curve_samples(self) -> list[float]:
+        fn = self.fn
+        return [] if fn is None else curve.samples(fn)
 
     @property
     def quiet_active(self) -> bool:
@@ -187,7 +207,7 @@ class AdaptiveVolumeController:
 
     @property
     def start_volume(self) -> int | None:
-        """The volume (percent) a fresh start gets now."""
+        """The volume (percent) a fresh start gets now, and what adapting aims for."""
         if self.quiet_active:
             vol = float(self.opt(CONF_QUIET_VOLUME))
         else:
@@ -208,6 +228,7 @@ class AdaptiveVolumeController:
 
     async def _set_volume(self, pid: str, percent: float, reason: str) -> None:
         level = round(percent / 100, 2)
+        self._expected[pid] = level
         try:
             await self.hass.services.async_call(
                 MP_DOMAIN,
@@ -235,7 +256,9 @@ class AdaptiveVolumeController:
             await self._set_volume(pid, vol, reason)
 
     async def async_apply_all(self) -> None:
-        """The Apply button: every available player that isn't off gets the start volume."""
+        """The Apply button: every available player that isn't off gets the start volume, and
+        any hand-change takeover is cleared."""
+        self.manual.clear()
         for pid in self.players:
             st = self.hass.states.get(pid)
             if st is not None and st.state != STATE_OFF:
@@ -250,6 +273,34 @@ class AdaptiveVolumeController:
             return
         if level * 100 > cap + 0.5:
             await self._set_volume(pid, cap, "quiet" if self.quiet_active else "cap")
+
+    def _taken_over(self, pid: str) -> bool:
+        since = self.manual.get(pid)
+        if since is None:
+            return False
+        reset = float(self.opt(CONF_AUTORESET) or 0)
+        if reset > 0 and dt_util.utcnow() - since >= timedelta(minutes=reset):
+            self.manual.pop(pid, None)
+            return False
+        return True
+
+    async def _adapt(self) -> None:
+        """One adapting step for every playing player that hasn't been taken over."""
+        goal = self.start_volume
+        if goal is None:
+            return
+        step = max(0.5, float(self.opt(CONF_ADAPT_STEP)))
+        for pid in self.players:
+            st = self.hass.states.get(pid)
+            if st is None or st.state != STATE_PLAYING or self._skipped(st) or self._taken_over(pid):
+                continue
+            level = st.attributes.get(ATTR_MEDIA_VOLUME_LEVEL)
+            if not isinstance(level, (int, float)):
+                continue
+            diff = goal - level * 100
+            if abs(diff) < 1:
+                continue
+            await self._set_volume(pid, level * 100 + max(-step, min(step, diff)), "adapt")
 
     # ---- events --------------------------------------------------------------------------
 
@@ -272,11 +323,19 @@ class AdaptiveVolumeController:
             stopped = self._stopped_at.get(pid)
             gap = timedelta(minutes=float(self.opt(CONF_IDLE_GAP)))
             if stopped is None or now - stopped >= gap:
+                self.manual.pop(pid, None)
                 self.hass.async_create_task(self.async_apply(pid, "start"))
             return
-        # Playing -> playing: only a volume change matters, and only for the cap.
-        if old.attributes.get(ATTR_MEDIA_VOLUME_LEVEL) != new.attributes.get(ATTR_MEDIA_VOLUME_LEVEL):
-            self.hass.async_create_task(self._enforce_cap(pid, new))
+        # Playing -> playing: a volume change is either ours or a hand change.
+        level = new.attributes.get(ATTR_MEDIA_VOLUME_LEVEL)
+        if old.attributes.get(ATTR_MEDIA_VOLUME_LEVEL) == level or not isinstance(level, (int, float)):
+            return
+        expected = self._expected.get(pid)
+        if expected is None or abs(level - expected) > _TOLERANCE:
+            if pid not in self.manual:
+                self.manual[pid] = now
+                self.notify()
+        self.hass.async_create_task(self._enforce_cap(pid, new))
 
     @callback
     def _on_quiet_entity(self, event: Event[EventStateChangedData]) -> None:
@@ -295,4 +354,6 @@ class AdaptiveVolumeController:
 
     @callback
     def _on_tick(self, _now: datetime) -> None:
+        if self.enabled and self.adapt:
+            self.hass.async_create_task(self._adapt())
         self.notify()

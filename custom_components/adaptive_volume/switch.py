@@ -15,7 +15,7 @@ from .entity import AdaptiveVolumeEntity
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
     c = entry.runtime_data
-    async_add_entities([EnabledSwitch(c, "enabled"), QuietSwitch(c, "quiet")])
+    async_add_entities([EnabledSwitch(c, "enabled"), QuietSwitch(c, "quiet"), AdaptSwitch(c, "adapt")])
 
 
 class EnabledSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
@@ -61,3 +61,32 @@ class QuietSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         self.controller.quiet_switch = False
         self.controller.quiet_changed()
+
+
+class AdaptSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
+    """Adapt while playing: glide playing speakers along the curve. A hand change takes a
+    speaker over until its next fresh start (or the auto-reset time)."""
+
+    _attr_icon = "mdi:chart-bell-curve-cumulative"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            self.controller.adapt = last.state == STATE_ON
+
+    @property
+    def is_on(self) -> bool:
+        return self.controller.adapt
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"taken_over": sorted(self.controller.manual)}
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self.controller.adapt = True
+        self.controller.manual.clear()
+        self.controller.notify()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self.controller.adapt = False
+        self.controller.notify()

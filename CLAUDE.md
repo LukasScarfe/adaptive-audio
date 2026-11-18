@@ -7,18 +7,24 @@ changelog). Raccoon context lives in the memory `[[ha-adaptive-volume-project]]`
 ## What this is
 
 A custom HA integration (domain `adaptive_volume`): a time-of-day default volume per speaker
-group, applied when playback starts after an idle gap, never mid-play except to enforce the quiet
-volume or the night cap. Behaviour rules are in the `controller.py` docstring; user-facing
+group (Simple Adaptive-Lighting-style anchors or Custom points; sigmoid/linear/steps curves),
+applied when playback starts after an idle gap, optionally adapted while playing (hand changes
+take a speaker over), plus quiet volume and night cap. Bundled card and a Configure preview image. Behaviour rules are in the `controller.py` docstring; user-facing
 summary in `README.md`.
 
 ## Layout
 
 ```
 custom_components/adaptive_volume/
-  schedule.py     PURE math (no HA import): parse points, curve/steps target, time windows
-  controller.py   per-entry state + event handling (player state changes, quiet entity, 1-min tick)
+  schedule.py     PURE math (no HA import): sigmoid shape, anchors/transitions, custom points, windows
+  curve.py        options dict -> volume-at-minute function + marks; shared by controller, sensor, preview
+  plot.py         PURE server-side SVG of the curve (the Configure preview)
+  http.py         preview view: flow stores pending options, embeds a signed /api/adaptive_volume/preview/<flow>.svg
+  controller.py   per-entry state + event handling (player state changes, quiet entity, 1-min tick/adapt)
   __init__.py     setup; reloads on options change except LIVE_OPTIONS (the number entities)
-  config_flow.py  user step (name, players) -> settings step; options flow edits everything
+  config_flow.py  setup: user -> schedule -> simple|custom -> preview. Configure: a menu
+                  (speakers, schedule, quiet_cap, preview, save); nothing saved until Save
+  frontend/adaptive-volume-card.js   the card, vanilla JS + SVG, registered in async_setup
   switch.py sensor.py number.py button.py entity.py   the per-instance entities (one service device)
   const.py        option keys + DEFAULTS
   strings.json + translations/en.json   keep identical (generated together)
@@ -42,7 +48,15 @@ python3 dev/e2e.py <token-file>                       # needs an entry with demo
 makes the schedule look wrong), the demo media players and `input_boolean.night_mode` as a
 linked quiet entity. Get a token through `/auth/login_flow` with the dev login.
 The demo `lounge_room` player has sources but no volume_set, so the skip-source rule is only
-checked on production (WiiM Line In).
+checked on production (WiiM Line In). Onboarding tokens last 30 min; mint a long-lived one over
+WS (`auth/long_lived_access_token`). The e2e adapt tests wait on the 1-min tick (~4 min total).
+
+**Seeing the card:** the puppeteer Chromium (124) is too old for HA's modern frontend build, so HA
+serves it the legacy build, which doesn't load extra modules (cards show "Configuration error").
+Real browsers are fine. For a screenshot, render the card on a blank page with a stand-in `hass`
+(`states`, `config.time_zone`, `callWS` returning history). The same old tzdata predates BC's
+permanent UTC-7, so give the stand-in `Etc/GMT+7`. HA's `ha-markdown` keeps `<img>`, which is
+what makes the preview step work.
 
 ## Releasing
 

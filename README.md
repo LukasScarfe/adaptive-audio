@@ -6,12 +6,19 @@ stands until the next fresh start.
 
 ## What it does
 
-- **Schedule:** points like `07:00 20` or `sunset+30 25`, one per line. In **Smooth curve** mode
-  the volume glides between points; in **Steps** mode each point holds until the next. The day
-  wraps, so the last point carries past midnight.
-- **Fresh starts only:** a speaker gets the schedule's volume when it starts playing after the
-  **idle gap** (default 10 min) of not playing. Shorter pauses keep your volume. Nothing changes
-  mid-play.
+- **Simple schedule (like Adaptive Lighting):** Day, Evening (optional) and Night levels, changed
+  at Wake, Evening and Bedtime anchors. Each anchor is a fixed time or sunrise/sunset plus an
+  offset, can be clamped ("sunset, but not before 21:30"), and has a ramp length. Ramps are
+  centred on the anchor or end at it.
+- **Custom schedule:** your own points, one per line, e.g. `07:00 20`, `sunrise+30 25`,
+  `sunset-45 30`. Each transition spans the gap to the next point.
+- **Curves:** Sigmoid (an S-curve that eases in and out, with a steepness setting), Linear, or Steps.
+- **Preview:** Configure shows today's curve as a picture before you save.
+- **Fresh starts:** a speaker gets the schedule's volume when it starts playing after the
+  **idle gap** (default 10 min) of not playing. Shorter pauses keep your volume.
+- **Adapt while playing (switch):** playing speakers glide along the curve, at most *Adapt step*
+  % per minute. If you change a speaker's volume by hand, it stops adapting until its next fresh
+  start, or for *Hand-change reset* minutes if you set that.
 - **Quiet:** a Quiet switch per instance, and optionally a linked entity (a night-mode switch, an
   `input_select` in a given state...). While quiet, fresh starts use the quiet volume, it is also
   the maximum, and turning quiet on pulls playing speakers down to it.
@@ -19,13 +26,28 @@ stands until the next fresh start.
   straight back. Fresh starts never go above it either.
 - **Skip sources:** sources where it never touches the volume, e.g. `Line In` for a turntable.
 
+## Card
+
+The integration registers its own card, so no Lovelace resource is needed:
+
+```yaml
+type: custom:adaptive-volume-card
+entity: sensor.adaptive_volume_living_room_target_volume
+title: Living room      # optional
+show_history: true      # optional: today's actual speaker volumes as dots
+```
+
+It plots the 24 h curve, a now marker, ramps, cap hours and the quiet level, plus each speaker's
+volume today. Times are in Home Assistant's time zone.
+
 ## Entities (per instance)
 
 | Entity | What it is |
 |---|---|
 | `switch.…_adaptive_volume` | Turns the instance on or off |
 | `switch.…_quiet` | Your quiet switch (attribute `quiet_active` includes the linked entity) |
-| `sensor.…_target_volume` | The schedule's volume now; attributes: `start_volume`, `cap`, `last_applied`... |
+| `switch.…_adapt_while_playing` | Glide playing speakers along the curve (attribute `taken_over`) |
+| `sensor.…_target_volume` | The schedule's volume now; attributes: `start_volume`, `cap`, `curve` (24 h, 10-min steps), `last_applied`... |
 | `number.…_quiet_volume`, `number.…_cap_volume` | Change live, no reload |
 | `button.…_apply_volume_now` | Give every speaker its start volume now |
 

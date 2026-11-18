@@ -2,16 +2,36 @@
 
 from __future__ import annotations
 
+import os
+
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 
-from .const import LIVE_OPTIONS
+from .const import CARD_URL, DOMAIN, LIVE_OPTIONS, URL_BASE
 from .controller import AdaptiveVolumeController
+from .http import PreviewView
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.NUMBER, Platform.BUTTON]
 
 type AdaptiveVolumeConfigEntry = ConfigEntry[AdaptiveVolumeController]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Once per HA start: the preview image view and the bundled card (no Lovelace resource
+    needed; the card registers itself as an extra frontend module)."""
+    hass.http.register_view(PreviewView())
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(URL_BASE, os.path.join(os.path.dirname(__file__), "frontend"), cache_headers=False)]
+    )
+    add_extra_js_url(hass, CARD_URL)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveVolumeConfigEntry) -> bool:

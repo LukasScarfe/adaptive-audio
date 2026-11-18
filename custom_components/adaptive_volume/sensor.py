@@ -1,4 +1,4 @@
-"""The target-volume sensor: what the schedule says now, plus the full picture as attributes."""
+"""The target-volume sensor: what the schedule says now, plus everything the card plots."""
 
 from __future__ import annotations
 
@@ -9,8 +9,17 @@ from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_MODE
+from . import curve
+from .const import (
+    CONF_CAP_ENABLED,
+    CONF_CAP_END,
+    CONF_CAP_START,
+    CONF_CAP_VOLUME,
+    CONF_QUIET_VOLUME,
+    CURVE_SAMPLE_MINUTES,
+)
 from .entity import AdaptiveVolumeEntity
+from .schedule import parse_clock
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
@@ -21,6 +30,8 @@ class TargetSensor(AdaptiveVolumeEntity, SensorEntity):
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:volume-vibrate"
+    # The plot data changes rarely but is large; keep it out of the recorder.
+    _unrecorded_attributes = frozenset({"curve", "curve_step", "marks", "cap_window", "last_applied"})
 
     @property
     def native_value(self) -> int | None:
@@ -30,14 +41,27 @@ class TargetSensor(AdaptiveVolumeEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         c = self.controller
+        opts = c.entry.options
+        cap_window = None
+        if c.opt(CONF_CAP_ENABLED):
+            cap_window = [parse_clock(c.opt(CONF_CAP_START)), parse_clock(c.opt(CONF_CAP_END))]
         return {
             "start_volume": c.start_volume,
-            "mode": c.opt(CONF_MODE),
+            "schedule_type": curve.schedule_type(opts),
+            "curve_type": curve.curve_name(opts),
+            "enabled": c.enabled,
+            "adapt": c.adapt,
+            "taken_over": sorted(c.manual),
             "quiet_active": c.quiet_active,
+            "quiet_volume": c.opt(CONF_QUIET_VOLUME),
             "cap_active": c.cap is not None,
             "cap": c.cap,
-            "enabled": c.enabled,
+            "cap_volume": c.opt(CONF_CAP_VOLUME),
+            "cap_window": cap_window,
             "players": c.players,
             "last_applied": c.last_applied,
             "schedule_error": c.schedule_error,
+            "curve_step": CURVE_SAMPLE_MINUTES,
+            "curve": c.curve_samples(),
+            "marks": c.marks,
         }

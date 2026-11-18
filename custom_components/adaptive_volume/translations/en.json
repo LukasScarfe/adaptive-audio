@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Adaptive Volume",
-        "description": "One instance per speaker group, each with its own schedule.",
+        "description": "One instance per speaker group, each with its own schedule. Quiet, the night cap and adapting while playing are under Configure afterwards.",
         "data": {
           "name": "Name",
           "players": "Speakers"
@@ -14,50 +14,257 @@
           "players": "Media players this instance looks after."
         }
       },
-      "settings": {
-        "title": "Settings",
-        "description": "{error}",
+      "schedule": {
+        "title": "Schedule",
         "data": {
-          "mode": "Schedule mode",
-          "points": "Schedule",
-          "idle_gap": "Idle gap",
-          "skip_sources": "Skip sources",
-          "quiet_volume": "Quiet volume",
-          "quiet_entity": "Quiet when this entity…",
-          "quiet_state": "…is in this state",
-          "cap_enabled": "Night cap",
-          "cap_start": "Cap starts",
-          "cap_end": "Cap ends",
-          "cap_volume": "Cap volume"
+          "schedule_type": "Schedule type",
+          "curve": "Curve",
+          "steepness": "Sigmoid steepness",
+          "align": "Ramp position"
         },
         "data_description": {
-          "mode": "Smooth curve: the volume glides between points. Steps: each point's volume holds until the next.",
-          "points": "One point per line: a time and a volume. Times can be a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15",
-          "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume. Shorter pauses keep your volume.",
-          "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
-          "quiet_volume": "Volume while quiet is on (the Quiet switch, or the linked entity). Also the maximum while quiet.",
-          "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below (e.g. a night-mode switch, or an input_select).",
-          "quiet_state": "The state that means quiet (default on).",
-          "cap_enabled": "During cap hours, turning a speaker above the cap volume pulls it straight back to the cap.",
-          "cap_volume": "The maximum during cap hours. Fresh starts never go above it either."
+          "schedule_type": "Simple: Day, Evening and Night levels with Wake, Evening and Bedtime anchors, like Adaptive Lighting. Custom: your own list of points.",
+          "curve": "Sigmoid: an S-curve that eases in and out. Linear: a straight ramp. Steps: an instant change.",
+          "steepness": "Sigmoid only: higher makes the middle of the S sharper (6 is like Adaptive Lighting's tanh).",
+          "align": "Simple only: centre the ramp on the anchor, or end the ramp at the anchor."
         }
+      },
+      "simple": {
+        "title": "Simple schedule",
+        "description": "{error}",
+        "data": {
+          "day_volume": "Day volume",
+          "use_evening": "Use an evening level",
+          "evening_volume": "Evening volume",
+          "night_volume": "Night volume"
+        },
+        "data_description": {
+          "day_volume": "From Wake.",
+          "use_evening": "Off = two levels (Day and Night), like Adaptive Lighting.",
+          "evening_volume": "From Evening, if used.",
+          "night_volume": "From Bedtime."
+        },
+        "sections": {
+          "wake": {
+            "name": "Wake",
+            "description": "Night → Day.",
+            "data": {
+              "kind": "Anchored to",
+              "time": "Time",
+              "offset": "Sun offset",
+              "earliest": "Not before",
+              "latest": "Not after",
+              "ramp": "Ramp length"
+            },
+            "data_description": {
+              "kind": "A fixed clock time, or sunrise/sunset.",
+              "time": "Used when anchored to a fixed time.",
+              "offset": "Minutes added to sunrise/sunset (negative = before).",
+              "earliest": "Optional, for sun anchors: never earlier than this.",
+              "latest": "Optional, for sun anchors: never later than this.",
+              "ramp": "How long the change takes. 0 = instant."
+            }
+          },
+          "evening": {
+            "name": "Evening",
+            "description": "Day → Evening (if used).",
+            "data": {
+              "kind": "Anchored to",
+              "time": "Time",
+              "offset": "Sun offset",
+              "earliest": "Not before",
+              "latest": "Not after",
+              "ramp": "Ramp length"
+            },
+            "data_description": {
+              "kind": "A fixed clock time, or sunrise/sunset.",
+              "time": "Used when anchored to a fixed time.",
+              "offset": "Minutes added to sunrise/sunset (negative = before).",
+              "earliest": "Optional, for sun anchors: never earlier than this.",
+              "latest": "Optional, for sun anchors: never later than this.",
+              "ramp": "How long the change takes. 0 = instant."
+            }
+          },
+          "bedtime": {
+            "name": "Bedtime",
+            "description": "Evening (or Day) → Night.",
+            "data": {
+              "kind": "Anchored to",
+              "time": "Time",
+              "offset": "Sun offset",
+              "earliest": "Not before",
+              "latest": "Not after",
+              "ramp": "Ramp length"
+            },
+            "data_description": {
+              "kind": "A fixed clock time, or sunrise/sunset.",
+              "time": "Used when anchored to a fixed time.",
+              "offset": "Minutes added to sunrise/sunset (negative = before).",
+              "earliest": "Optional, for sun anchors: never earlier than this.",
+              "latest": "Optional, for sun anchors: never later than this.",
+              "ramp": "How long the change takes. 0 = instant."
+            }
+          }
+        }
+      },
+      "custom": {
+        "title": "Custom schedule",
+        "description": "{error}",
+        "data": {
+          "points": "Points"
+        },
+        "data_description": {
+          "points": "One per line: a time and a volume. A time is a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15"
+        }
+      },
+      "preview": {
+        "title": "Volume through the day",
+        "description": "{image}\n\nToday's curve with these settings. Blue shading = ramps, red = cap hours, dotted = quiet volume. {sun}"
       }
     },
     "error": {
-      "bad_schedule": "The schedule couldn't be read: {error}"
+      "bad_schedule": "This schedule can't be used: {error}"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Adaptive Volume settings",
-        "description": "{error}",
+        "title": "Adaptive Volume",
+        "menu_options": {
+          "speakers": "Speakers and behaviour",
+          "schedule": "Schedule",
+          "quiet_cap": "Quiet and night cap",
+          "preview": "Preview the curve",
+          "save": "Save"
+        }
+      },
+      "speakers": {
+        "title": "Speakers and behaviour",
         "data": {
           "players": "Speakers",
-          "mode": "Schedule mode",
-          "points": "Schedule",
           "idle_gap": "Idle gap",
           "skip_sources": "Skip sources",
+          "adapt_step": "Adapt step",
+          "autoreset": "Hand-change reset"
+        },
+        "data_description": {
+          "players": "Media players this instance looks after.",
+          "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume.",
+          "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
+          "adapt_step": "With Adapt while playing on: the most the volume moves per minute.",
+          "autoreset": "With Adapt while playing on, a hand change stops adapting that speaker. 0 = until its next fresh start; otherwise resume after this many minutes."
+        }
+      },
+      "schedule": {
+        "title": "Schedule",
+        "data": {
+          "schedule_type": "Schedule type",
+          "curve": "Curve",
+          "steepness": "Sigmoid steepness",
+          "align": "Ramp position"
+        },
+        "data_description": {
+          "schedule_type": "Simple: Day, Evening and Night levels with Wake, Evening and Bedtime anchors, like Adaptive Lighting. Custom: your own list of points.",
+          "curve": "Sigmoid: an S-curve that eases in and out. Linear: a straight ramp. Steps: an instant change.",
+          "steepness": "Sigmoid only: higher makes the middle of the S sharper (6 is like Adaptive Lighting's tanh).",
+          "align": "Simple only: centre the ramp on the anchor, or end the ramp at the anchor."
+        }
+      },
+      "simple": {
+        "title": "Simple schedule",
+        "description": "{error}",
+        "data": {
+          "day_volume": "Day volume",
+          "use_evening": "Use an evening level",
+          "evening_volume": "Evening volume",
+          "night_volume": "Night volume"
+        },
+        "data_description": {
+          "day_volume": "From Wake.",
+          "use_evening": "Off = two levels (Day and Night), like Adaptive Lighting.",
+          "evening_volume": "From Evening, if used.",
+          "night_volume": "From Bedtime."
+        },
+        "sections": {
+          "wake": {
+            "name": "Wake",
+            "description": "Night → Day.",
+            "data": {
+              "kind": "Anchored to",
+              "time": "Time",
+              "offset": "Sun offset",
+              "earliest": "Not before",
+              "latest": "Not after",
+              "ramp": "Ramp length"
+            },
+            "data_description": {
+              "kind": "A fixed clock time, or sunrise/sunset.",
+              "time": "Used when anchored to a fixed time.",
+              "offset": "Minutes added to sunrise/sunset (negative = before).",
+              "earliest": "Optional, for sun anchors: never earlier than this.",
+              "latest": "Optional, for sun anchors: never later than this.",
+              "ramp": "How long the change takes. 0 = instant."
+            }
+          },
+          "evening": {
+            "name": "Evening",
+            "description": "Day → Evening (if used).",
+            "data": {
+              "kind": "Anchored to",
+              "time": "Time",
+              "offset": "Sun offset",
+              "earliest": "Not before",
+              "latest": "Not after",
+              "ramp": "Ramp length"
+            },
+            "data_description": {
+              "kind": "A fixed clock time, or sunrise/sunset.",
+              "time": "Used when anchored to a fixed time.",
+              "offset": "Minutes added to sunrise/sunset (negative = before).",
+              "earliest": "Optional, for sun anchors: never earlier than this.",
+              "latest": "Optional, for sun anchors: never later than this.",
+              "ramp": "How long the change takes. 0 = instant."
+            }
+          },
+          "bedtime": {
+            "name": "Bedtime",
+            "description": "Evening (or Day) → Night.",
+            "data": {
+              "kind": "Anchored to",
+              "time": "Time",
+              "offset": "Sun offset",
+              "earliest": "Not before",
+              "latest": "Not after",
+              "ramp": "Ramp length"
+            },
+            "data_description": {
+              "kind": "A fixed clock time, or sunrise/sunset.",
+              "time": "Used when anchored to a fixed time.",
+              "offset": "Minutes added to sunrise/sunset (negative = before).",
+              "earliest": "Optional, for sun anchors: never earlier than this.",
+              "latest": "Optional, for sun anchors: never later than this.",
+              "ramp": "How long the change takes. 0 = instant."
+            }
+          }
+        }
+      },
+      "custom": {
+        "title": "Custom schedule",
+        "description": "{error}",
+        "data": {
+          "points": "Points"
+        },
+        "data_description": {
+          "points": "One per line: a time and a volume. A time is a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15"
+        }
+      },
+      "preview": {
+        "title": "Volume through the day",
+        "description": "{image}\n\nToday's curve with these settings. Blue shading = ramps, red = cap hours, dotted = quiet volume. {sun}"
+      },
+      "quiet_cap": {
+        "title": "Quiet and night cap",
+        "data": {
           "quiet_volume": "Quiet volume",
           "quiet_entity": "Quiet when this entity…",
           "quiet_state": "…is in this state",
@@ -67,28 +274,43 @@
           "cap_volume": "Cap volume"
         },
         "data_description": {
-          "players": "Media players this instance looks after.",
-          "mode": "Smooth curve: the volume glides between points. Steps: each point's volume holds until the next.",
-          "points": "One point per line: a time and a volume. Times can be a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15",
-          "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume. Shorter pauses keep your volume.",
-          "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
           "quiet_volume": "Volume while quiet is on (the Quiet switch, or the linked entity). Also the maximum while quiet.",
-          "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below (e.g. a night-mode switch, or an input_select).",
+          "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below.",
           "quiet_state": "The state that means quiet (default on).",
-          "cap_enabled": "During cap hours, turning a speaker above the cap volume pulls it straight back to the cap.",
+          "cap_enabled": "During cap hours, turning a speaker above the cap volume pulls it straight back.",
           "cap_volume": "The maximum during cap hours. Fresh starts never go above it either."
         }
       }
     },
     "error": {
-      "bad_schedule": "The schedule couldn't be read: {error}"
+      "bad_schedule": "This schedule can't be used: {error}"
     }
   },
   "selector": {
-    "mode": {
+    "schedule_type": {
       "options": {
-        "curve": "Smooth curve",
+        "simple": "Simple (Wake / Evening / Bedtime)",
+        "custom": "Custom points"
+      }
+    },
+    "curve": {
+      "options": {
+        "sigmoid": "Sigmoid (S-curve)",
+        "linear": "Linear",
         "steps": "Steps"
+      }
+    },
+    "align": {
+      "options": {
+        "centre": "Centred on the anchor",
+        "end": "Ends at the anchor"
+      }
+    },
+    "anchor_kind": {
+      "options": {
+        "fixed": "Fixed time",
+        "sunrise": "Sunrise",
+        "sunset": "Sunset"
       }
     }
   },
@@ -99,6 +321,9 @@
       },
       "quiet": {
         "name": "Quiet"
+      },
+      "adapt": {
+        "name": "Adapt while playing"
       }
     },
     "sensor": {

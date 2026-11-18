@@ -8,14 +8,17 @@ def st(e): return req("GET","/api/states/"+e)
 def call(d,s,data): req("POST",f"/api/services/{d}/{s}",data); time.sleep(1.2)
 P="media_player.living_room"
 def vol(): return st(P)["attributes"].get("volume_level")
-entry=[e for e in req("GET","/api/config/config_entries/entry") if e["domain"]=="adaptive_volume"][0]["entry_id"]
+entry=[e for e in req("GET","/api/config/config_entries/entry") if e["domain"]=="adaptive_volume" and e["title"]=="Living room"][0]["entry_id"]
+SPEAKERS={"players":[P,"media_player.walkman"],"idle_gap":0,"skip_sources":"Line In","adapt_step":1,"autoreset":0}
+QUIET_CAP={"quiet_volume":10,"quiet_entity":"input_boolean.night_mode","quiet_state":"on",
+           "cap_enabled":False,"cap_start":"22:00:00","cap_end":"07:00:00","cap_volume":25}
 def options(**kw):
-    f=req("POST","/api/config/config_entries/options/flow",{"handler":entry})
-    cur={x["name"]:None for x in f["data_schema"]}
-    base={"players":[P,"media_player.walkman"],"mode":"curve","points":"07:00 20\n10:00 40\n18:00 35\n22:00 15","idle_gap":0,
-          "skip_sources":"Line In","quiet_volume":10,"quiet_entity":"input_boolean.night_mode","quiet_state":"on",
-          "cap_enabled":False,"cap_start":"22:00:00","cap_end":"07:00:00","cap_volume":25}
-    base.update(kw); r=req("POST",f"/api/config/config_entries/options/flow/{f['flow_id']}",base); time.sleep(2); return r["type"]
+    """Configure through the menu: Speakers and behaviour, Quiet and night cap, Save."""
+    f=req("POST","/api/config/config_entries/options/flow",{"handler":entry}); fid=f["flow_id"]
+    for step, base in (("speakers",SPEAKERS),("quiet_cap",QUIET_CAP)):
+        req("POST",f"/api/config/config_entries/options/flow/{fid}",{"next_step_id":step})
+        req("POST",f"/api/config/config_entries/options/flow/{fid}",{k:kw.get(k,v) for k,v in base.items()})
+    r=req("POST",f"/api/config/config_entries/options/flow/{fid}",{"next_step_id":"save"}); time.sleep(2); return r["type"]
 def check(name, got, want):
     ok = abs((got or -1)-want)<0.011; print(("PASS" if ok else "FAIL"), name, "got", got, "want", want)
 tgt=int(st("sensor.adaptive_volume_living_room_target_volume")["state"])/100
@@ -54,6 +57,22 @@ call("switch","turn_on",{"entity_id":"switch.adaptive_volume_living_room_adaptiv
 call("button","press",{"entity_id":"button.adaptive_volume_living_room_apply_volume_now"})
 check("apply button", vol(), tgt)
 check("apply button other speaker", st("media_player.walkman")["attributes"].get("volume_level"), tgt)
-print("options:",options(mode="steps",points="sunrise 20\n12:00 40\nsunset 30\nsunset+120 15"))
 s=st("sensor.adaptive_volume_living_room_target_volume"); print("steps+sun target:",s["state"],s["attributes"]["schedule_error"])
 print("last_applied:",json.dumps(s["attributes"]["last_applied"]))
+
+# Adapt while playing: glide toward the target, a hand change takes the speaker over.
+SW="switch.adaptive_volume_living_room_adapt_while_playing"
+print("options:",options(idle_gap=0, adapt_step=5))
+call("switch","turn_off",{"entity_id":SW})
+call("media_player","volume_set",{"entity_id":P,"volume_level":0.25})
+call("switch","turn_on",{"entity_id":SW})
+time.sleep(63)
+check("adapt: one 5% step toward the target", vol(), 0.30)
+call("media_player","volume_set",{"entity_id":P,"volume_level":0.55})
+print("taken over:", st(SW)["attributes"]["taken_over"])
+time.sleep(62)
+check("adapt: hand change is left alone", vol(), 0.55)
+call("media_player","media_pause",{"entity_id":P}); call("media_player","media_play",{"entity_id":P})
+check("adapt: fresh start clears the takeover", vol(), tgt)
+print("taken over after fresh start:", st(SW)["attributes"]["taken_over"])
+call("switch","turn_off",{"entity_id":SW})
