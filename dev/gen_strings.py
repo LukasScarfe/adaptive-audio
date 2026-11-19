@@ -29,8 +29,8 @@ def page(save):
     return {
         "title": "Adaptive Volume",
         "description": (
-            "{image}\n\nThe line shows the volume your speakers start at through the day. "
-            "Light blue: the volume is changing. Red: night cap hours. Dotted: quiet volume. {sun}"
+            "Sets the volume your speakers start at through the day. The Adaptive Volume card "
+            "shows the day's volume as a chart. {sun}"
         ),
         "submit": save,
         "data": {"name": "Name"},
@@ -43,12 +43,14 @@ def page(save):
                     "skip_sources": "Leave these inputs alone",
                     "idle_gap": "Reset after being stopped for",
                     "autoreset": "Follow the schedule again after",
+                    "max_rate": "Never change the volume faster than",
                 },
                 {
                     "players": "The speakers this controls.",
                     "skip_sources": "If a speaker is playing one of these inputs, its volume is never changed. Separate them with commas, for example: Line In",
                     "idle_gap": "Once a speaker has been stopped this long, it starts at the scheduled volume the next time it plays. Shorter pauses keep your volume.",
                     "autoreset": "Only matters when Adjust while playing is on. If you change a speaker's volume yourself, it stops following the schedule. 0 waits until it next starts playing.",
+                    "max_rate": "Only matters when Adjust while playing is on. Playing speakers move toward the scheduled volume by at most this much each minute. Starting to play, quiet mode and the night cap still change the volume straight away.",
                 },
             ),
             "schedule": flat(
@@ -108,7 +110,6 @@ def errors(save):
     return {
         "bad_schedule": "This schedule doesn't work: {error}",
         "need_speakers": "Add a name and at least one speaker.",
-        "redrawn": f"The chart now shows your changes. Press {save} again to keep them.",
     }
 
 

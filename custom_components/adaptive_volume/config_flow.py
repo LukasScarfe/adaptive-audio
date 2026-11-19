@@ -1,14 +1,12 @@
 """Config and options flow: one page, the same for setup and Configure.
 
-Today's curve is at the top, then collapsible sections: Speakers and behaviour, Schedule,
-Wake / Evening / Bedtime, Quiet and night cap. Options are stored flat except the three anchors,
-so the flat sections are unpacked on submit. If a submit changes the schedule, the page comes
-back once with the curve redrawn; submitting again (unchanged) saves.
+Collapsible sections: Speakers and behaviour, Schedule, Wake / Evening / Bedtime, Quiet and
+night cap. Options are stored flat except the three anchors, so the flat sections are unpacked
+on submit. A submit saves straight away unless something is missing or the schedule is broken.
 """
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import voluptuous as vol
@@ -19,7 +17,7 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 from homeassistant.util import dt as dt_util
 
-from . import curve, http as preview, schedule
+from . import curve, schedule
 from .const import (
     A_ENTITY,
     A_RAMP,
@@ -37,6 +35,7 @@ from .const import (
     CONF_DAY_VOLUME,
     CONF_EVENING_VOLUME,
     CONF_IDLE_GAP,
+    CONF_MAX_RATE,
     CONF_NAME,
     CONF_NIGHT_VOLUME,
     CONF_PLAYERS,
@@ -54,9 +53,6 @@ from .const import (
     SCHEDULE_TYPES,
 )
 from .controller import entity_minute, sun_minutes
-
-_LOGGER = logging.getLogger(__name__)
-
 
 def _num(lo, hi, unit=None, step=1, mode="box"):
     cfg = {"min": lo, "max": hi, "step": step, "mode": mode}
@@ -98,6 +94,7 @@ SPEAKERS = vol.Schema(
         vol.Optional(CONF_SKIP_SOURCES): selector.TextSelector(),
         vol.Required(CONF_IDLE_GAP): _num(0, 720, "min"),
         vol.Required(CONF_AUTORESET): _num(0, 1440, "min"),
+        vol.Required(CONF_MAX_RATE): _num(1, 100, "%/min"),
     }
 )
 
@@ -129,13 +126,6 @@ QUIET_CAP = vol.Schema(
 )
 
 FLAT = {"speakers": SPEAKERS, "schedule": SCHEDULE, "quiet_cap": QUIET_CAP}
-# Fields that change the curve: a submit that changes one of these redraws before saving.
-CURVE_KEYS = [str(k) for k in SCHEDULE.schema] + list(ANCHORS) + [
-    CONF_QUIET_VOLUME, CONF_CAP_ENABLED, CONF_CAP_ENTITY, CONF_CAP_VOLUME,
-    CONF_CAP_START, CONF_CAP_START_ENTITY, CONF_CAP_END, CONF_CAP_END_ENTITY,
-]
-
-
 def page_schema(with_name: bool) -> vol.Schema:
     fields: dict = {}
     if with_name:
@@ -228,45 +218,30 @@ class _Page:
 
     opts: dict[str, Any]
     _with_name = False
-    _shown: dict[str, Any] | None = None  # the options the visible curve was drawn from
 
     def _page(self, step_id: str, errors: dict[str, str] | None = None):
-        self._shown = dict(self.opts)
         return self.async_show_form(
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(page_schema(self._with_name), _suggested(self.opts)),
             errors=errors or {},
-            description_placeholders=self._preview(),
+            description_placeholders=self._placeholders(),
         )
 
-    def _preview(self) -> dict[str, str]:
+    def _placeholders(self) -> dict[str, str]:
         err = check_schedule(self.hass, self.opts)
-        try:
-            url = preview.preview_url(self.hass, self.flow_id, self.opts)
-            image = f"![Volume through the day]({url})"
-        except Exception:  # noqa: BLE001 - no request context to sign with; skip the picture
-            _LOGGER.debug("preview image unavailable", exc_info=True)
-            image = "(Preview image unavailable here; the card shows the same curve.)"
         rise, set_ = sun_minutes(self.hass, dt_util.now().date())
         sun = ""
         if rise is not None and set_ is not None:
             sun = f"Today: sunrise {rise // 60:02d}:{rise % 60:02d}, sunset {set_ // 60:02d}:{set_ % 60:02d}."
-        return {"image": image, "sun": sun, "error": err or ""}
-
-    def _curve_changed(self) -> bool:
-        shown = self._shown or {}
-        return any(shown.get(k) != self.opts.get(k) for k in CURVE_KEYS)
+        return {"sun": sun, "error": err or ""}
 
     async def _submit(self, step_id: str, user_input: dict[str, Any]):
-        """Apply the input; redraw if the curve changed or something's wrong, else None."""
+        """Apply the input; show the page again if something's wrong, else None."""
         self.opts = _apply(self.opts, user_input, self._with_name)
         if self._with_name and (not self.opts.get(CONF_NAME) or not self.opts.get(CONF_PLAYERS)):
             return self._page(step_id, {"base": "need_speakers"})
         if check_schedule(self.hass, self.opts) is not None:
             return self._page(step_id, {"base": "bad_schedule"})
-        if self._curve_changed():
-            return self._page(step_id, {"base": "redrawn"})
-        preview.forget(self.hass, self.flow_id)
         return None
 
 

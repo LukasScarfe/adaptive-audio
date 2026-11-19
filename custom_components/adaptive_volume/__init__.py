@@ -14,7 +14,6 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import CARD_URL, DOMAIN, LIVE_OPTIONS, URL_BASE
 from .controller import AdaptiveVolumeController
-from .http import PreviewView
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -24,9 +23,8 @@ type AdaptiveVolumeConfigEntry = ConfigEntry[AdaptiveVolumeController]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Once per HA start: the preview image view and the bundled card (no Lovelace resource
-    needed; the card registers itself as an extra frontend module)."""
-    hass.http.register_view(PreviewView())
+    """Once per HA start: the bundled card (no Lovelace resource needed; the card registers
+    itself as an extra frontend module)."""
     await hass.http.async_register_static_paths(
         [StaticPathConfig(URL_BASE, os.path.join(os.path.dirname(__file__), "frontend"), cache_headers=False)]
     )

@@ -7,6 +7,7 @@ CONF_PLAYERS = "players"
 CONF_IDLE_GAP = "idle_gap"  # minutes not playing before the next play counts as a fresh start
 CONF_SKIP_SOURCES = "skip_sources"  # comma-separated; e.g. "Line In"
 CONF_AUTORESET = "autoreset"  # minutes after a hand change to resume adapting; 0 = next fresh start
+CONF_MAX_RATE = "max_rate"  # % per minute at most while adjusting during playback
 
 # Schedule
 CONF_SCHEDULE_TYPE = "schedule_type"  # "simple" or "custom"
@@ -46,8 +47,6 @@ LIVE_OPTIONS = {CONF_QUIET_VOLUME, CONF_CAP_VOLUME, CONF_CAP_ENABLED}
 # Options the UI no longer offers; dropped when an entry is saved.
 RETIRED_OPTIONS = ("adapt_step", CONF_STEEPNESS, CONF_ALIGN, CONF_MODE)
 
-ADAPT_STEP = 1  # % per minute at most while adapting; the curve itself moves slower than this
-
 SCHEDULE_TYPES = ["simple", "custom"]
 CURVES = ["sigmoid", "linear", "steps"]
 
@@ -55,6 +54,7 @@ DEFAULTS = {
     CONF_IDLE_GAP: 10,
     CONF_SKIP_SOURCES: "",
     CONF_AUTORESET: 0,
+    CONF_MAX_RATE: 10,
     CONF_SCHEDULE_TYPE: "simple",
     CONF_CURVE: "sigmoid",
     CONF_STEEPNESS: 6,
@@ -79,4 +79,3 @@ CURVE_SAMPLE_MINUTES = 10  # the sensor's 24 h `curve` attribute: one value per 
 
 URL_BASE = "/adaptive_volume_static"
 CARD_URL = f"{URL_BASE}/adaptive-volume-card.js"
-PREVIEW_URL = "/api/adaptive_volume/preview/{key}.svg"

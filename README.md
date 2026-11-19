@@ -13,7 +13,7 @@ night. If you turn a speaker up or down while it plays, it stays where you put i
 - **Set when playback starts.** When a speaker starts playing after being stopped for a while
   (10 minutes by default), it starts at the scheduled volume. Shorter pauses keep your volume.
 - **Adjust while playing (optional).** Turn on this switch and playing speakers follow the
-  schedule slowly, at most 1% a minute. If you change a speaker's volume yourself, it stops
+  schedule, never faster than a rate you set (10% a minute by default). If you change a speaker's volume yourself, it stops
   following the schedule until it next starts playing, or after a number of minutes you choose.
 - **Quiet mode.** A switch, and optionally another entity such as a night-mode switch, that sets
   speakers to a quiet volume and keeps them from going above it.
@@ -25,10 +25,9 @@ night. If you turn a speaker up or down while it plays, it stays where you put i
 
 ## Setting it up
 
-*Settings → Devices & services → Add integration → Adaptive Volume.* Everything is on one page,
-with a chart of the day's volume at the top. When you change the schedule and press Create, the
-chart redraws so you can check it. Press Create again to keep it. Change anything later with
-**Configure**, which shows the same page.
+*Settings → Devices & services → Add integration → Adaptive Volume.* Everything is on one page.
+Press Create to save it. Change anything later with **Configure**, which shows the same page. The
+card shows the day's volume as a chart.
 
 Add one for each speaker or group of speakers that should share a schedule.
 

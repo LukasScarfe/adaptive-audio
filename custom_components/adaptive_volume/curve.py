@@ -1,5 +1,5 @@
 """Turn an options dict into a volume-at-minute function. Shared by the controller, the
-sensor's 24 h curve and the Configure preview, so all three always agree."""
+sensor's 24 h curve and the card, so they always agree."""
 
 from __future__ import annotations
 

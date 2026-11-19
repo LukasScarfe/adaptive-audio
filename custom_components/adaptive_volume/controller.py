@@ -4,7 +4,7 @@ Rules:
 - A player that starts playing after `idle_gap` minutes of not playing gets the start volume:
   the quiet volume while quiet is active, else the schedule's target, never above the cap.
 - With "Adapt while playing" on, every minute a playing player moves toward that volume by at
-  most ADAPT_STEP % (1 %; the curve itself moves slower, so this only matters when catching up). A hand change (any volume change Adaptive Volume didn't make) stops
+  most `max_rate` % (10 % by default). Starts, quiet mode and the night cap still apply at once. A hand change (any volume change Adaptive Volume didn't make) stops
   adapting that player until its next fresh start, or for `autoreset` minutes if that is set.
 - With it off, the volume is left alone mid-play.
 - The night cap is on while its switch (the `cap_enabled` option) or its linked entity is on, and
@@ -46,12 +46,12 @@ from homeassistant.util import dt as dt_util
 
 from . import curve, schedule
 from .const import (
-    ADAPT_STEP,
     CONF_AUTORESET,
     CONF_CAP_ENABLED,
     CONF_CAP_ENTITY,
     CONF_CAP_VOLUME,
     CONF_IDLE_GAP,
+    CONF_MAX_RATE,
     CONF_PLAYERS,
     CONF_QUIET_ENTITY,
     CONF_QUIET_STATE,
@@ -329,7 +329,7 @@ class AdaptiveVolumeController:
         goal = self.start_volume
         if goal is None:
             return
-        step = ADAPT_STEP
+        step = float(self.opt(CONF_MAX_RATE))
         for pid in self.players:
             st = self.hass.states.get(pid)
             if st is None or st.state != STATE_PLAYING or self._skipped(st) or self._taken_over(pid):
