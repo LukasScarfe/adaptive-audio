@@ -1,0 +1,317 @@
+/* Lukas's style, LUKAS: the canonical copy, Civic in the Moss colours. Read lukas-style.md beside it before changing
+   anything. Plain and functional, after canada.ca: Lato headings over Noto Sans, a bar under the page title,
+   underlined links, bold labels and open sections. Dark (the default) is nearly black green with lavender
+   accents; light, switched by data-theme="light" on <html>, is a pale, almost white pink with deep teal.
+   Every text colour meets 4.5:1 and control borders 3:1. The fonts are self-hosted from fonts/ (SIL OFL).
+   Built on lukas-clear.css's components, so the clear contrast and non-colour cues carry over. */
+@font-face { font-family: "Lato"; src: url("fonts/lato-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Lato"; src: url("fonts/lato-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Lato"; src: url("fonts/lato-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Noto Sans"; src: url("fonts/noto-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Noto Sans"; src: url("fonts/noto-sans-latin-wght-italic.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
+:root {
+  --bg: #0d1a0e;           /* page ground */
+  --surface: #122213;      /* raised panels, dialogs */
+  --cell: #192d1a;         /* inputs, tiles, toggle tracks */
+  --ink: #f2f8f2;          /* page title, h1/h2, input text */
+  --heading: #f2f8f2;      /* section headings */
+  --bold: #f2f8f2;         /* bold text */
+  --ink-2: #a9d4aa;        /* body text */
+  --muted: #6fb672;        /* captions, labels, dates */
+  --line: #263827;         /* dividers, masthead rule */
+  --axis: #526a53;         /* control borders (3:1), chart axes */
+  --tab-on: #334b34;       /* selected toggle */
+  --accent: #77589c;       /* primary button */
+  --accent-hover: #594275; /* its hover */
+  --accent-ink: #ffffff;   /* text on the primary button */
+  --card-line: #244c25;    /* card border */
+  --focus: #b9a3d6;        /* links, accent text, outlines, highlights (4.5:1) */
+  --ring: rgba(255, 255, 255, 0.12); /* faint ring on raised toggles and toasts */
+  --scrim: rgba(8, 16, 8, 0.92); /* behind dialogs */
+  --blue: #6aa0f0;         /* data and status hues, all 4.5:1 */
+  --red: #ff7b7b;
+  --grey: #cccccc;
+  --warn: #f2c14e;
+  --font-display: "Lato", "Helvetica Neue", Arial, sans-serif; /* Lato, self-hosted in fonts/ */
+  --font-body: "Noto Sans", "Segoe UI", Roboto, Arial, sans-serif; /* Noto Sans, self-hosted in fonts/ */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --ctl: 36px;             /* every compact control is this tall */
+  --gap: 12px;             /* every gap between controls */
+  --radius: 4px;
+  --page: 1140px;          /* .wrap max width */
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f5eeee;           /* page ground */
+  --surface: #fbf8f8;      /* raised panels, dialogs */
+  --cell: #ebe0e0;         /* inputs, tiles, toggle tracks */
+  --ink: #140000;          /* page title, h1/h2, input text */
+  --heading: #160000;      /* section headings */
+  --bold: #3e0000;         /* bold text */
+  --ink-2: #3e0000;        /* body text */
+  --muted: #7a1414;        /* captions, labels, dates */
+  --line: #d8c8c8;         /* dividers, masthead rule */
+  --axis: #a38181;         /* control borders (3:1), chart axes */
+  --tab-on: #fbf8f8;       /* selected toggle */
+  --accent: #14555a;       /* primary button */
+  --accent-hover: #0e3c3f; /* its hover */
+  --accent-ink: #ffffff;   /* text on the primary button */
+  --card-line: #e0c4c4;    /* card border */
+  --focus: #14555a;        /* links, accent text, outlines, highlights (4.5:1) */
+  --ring: rgba(22, 0, 0, 0.10); /* faint ring on raised toggles and toasts */
+  --scrim: rgba(249, 245, 245, 0.95); /* behind dialogs */
+  --blue: #2a5db0;         /* data and status hues, all 4.5:1 */
+  --red: #c40000;
+  --grey: #5b5b5b;
+  --warn: #765519;
+  color-scheme: light;
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink-2);
+  font: 16px/1.5 var(--font-body);
+  padding: 0 16px 64px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: var(--page); margin: 0 auto; }
+
+h1, h2, h3 { font-family: var(--font-display); color: var(--heading); text-wrap: balance; margin: 0 0 0.5em; }
+h1 { font-size: 1.75rem; font-weight: 800; color: var(--ink); }
+h2 { font-size: 1.25rem; font-weight: 800; color: var(--ink); }
+/* Small-caps section label, not a big heading. */
+h3 { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+p { margin: 0 0 0.75em; }
+b, strong { color: var(--bold); font-weight: 700; }
+a { color: var(--focus); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- masthead ---------- */
+/* Logo mark (+ optional name) left, title centred, controls and the theme button right. Below 640px
+   the controls drop to their own row. */
+.masthead-bar { background: var(--bg); border-bottom: 1px solid var(--line); margin: 0 -16px 24px; padding: 12px 16px; }
+.masthead {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "me title nav theme";
+  align-items: center; gap: var(--gap); --title: 22px;
+}
+.me, .masthead h1 { font-family: var(--font-display); font-size: var(--title); line-height: 1.2; margin: 0; }
+.me { grid-area: me; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 500; white-space: nowrap; }
+.me img { width: 1.2em; height: 1.2em; display: block; }
+.me .logo-light { display: none; }
+:root[data-theme="light"] .me .logo-light { display: block; }
+:root[data-theme="light"] .me .logo-dark { display: none; }
+.masthead h1 { grid-area: title; font-weight: 800; text-align: center; color: var(--ink); }
+.masthead .nav { grid-area: nav; display: flex; gap: var(--gap); }
+@media (max-width: 640px) {
+  .masthead { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "me title theme" "nav nav nav"; }
+  .masthead .nav { justify-content: center; flex-wrap: wrap; }
+}
+/* On a phone the name gives way to the title; the logo mark stays. */
+@media (max-width: 480px) { .me span { display: none; } }
+/* Borderless icon button, as in the lukasscarfe.com header: sun in dark mode, moon in light. */
+.theme-btn { grid-area: theme; justify-self: end; width: var(--ctl); height: var(--ctl); min-height: 0; border: 0; background: none; padding: 0; cursor: pointer; color: var(--ink-2); display: inline-grid; place-items: center; }
+.theme-btn:hover { color: var(--focus); }
+.theme-btn svg { width: 20px; height: 20px; display: block; }
+
+/* ---------- controls ---------- */
+button {
+  font: inherit; font-size: 14px; font-weight: 500;
+  color: var(--ink-2); background: transparent;
+  border: 1px solid var(--axis); border-radius: var(--radius);
+  padding: 0 14px; min-height: 44px; cursor: pointer; touch-action: manipulation;
+}
+button:hover:not(:disabled) { border-color: var(--focus); color: var(--ink); }
+button:disabled { opacity: 0.5; cursor: default; }
+/* The site's primary button: solid primary with page-coloured text. One per view. */
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); border-radius: 6px; padding: 8px 16px; font-size: 16px; }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-ink); }
+button.danger { color: var(--red); border-color: var(--red); } /* its label must say what it does */
+button.small { min-height: var(--ctl); padding: 0 12px; }
+button.primary.small { padding: 0 12px; font-size: 14px; }
+button.ghost { background: transparent; border-color: transparent; }
+
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--cell);
+  border: 1px solid var(--axis); border-radius: var(--radius);
+  padding: 0.5em 0.75em; min-height: 44px; width: 100%;
+}
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 0.25em; }
+
+/* Segmented toggle: a --cell track with the pressed segment raised in --tab-on. */
+.tabs { display: inline-flex; height: var(--ctl); background: var(--cell); border-radius: 8px; padding: 3px; gap: 2px; }
+.tabs button { border: 0; background: transparent; min-height: 0; padding: 0 12px; border-radius: 6px; color: var(--ink-2); white-space: nowrap; }
+.tabs button[aria-pressed="true"] { background: var(--tab-on); color: var(--ink); font-weight: 650; box-shadow: 0 1px 2px var(--ring), 0 0 0 1px var(--ring); }
+
+/* A grid of choices: tap to select. */
+.picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.picks button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picks button[aria-pressed="true"], button.chosen {
+  border-color: var(--focus); background: var(--cell); color: var(--ink); font-weight: 650; box-shadow: inset 0 0 0 1px var(--focus);
+}
+
+/* ---------- containers ---------- */
+/* Cards, as the site's post cards: transparent, with a 1px neutral border and 8px corners. */
+.card { background: transparent; border: 1px solid var(--card-line); border-radius: 8px; padding: 16px; }
+.banner { background: var(--cell); border: 1px solid var(--axis); border-radius: var(--radius); padding: 0.5em 0.75em; }
+.overlay {
+  position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center;
+  padding: 16px; z-index: 40; overflow: auto;
+}
+.overlay > .card { background: var(--bg); width: min(100%, 440px); }
+.toast {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--red); color: var(--bg); padding: 0.6em 1em; border-radius: var(--radius); z-index: 50;
+  max-width: calc(100vw - 32px); box-shadow: 0 6px 24px var(--ring);
+}
+
+/* A small rounded label. */
+.tag { display: inline-block; font-size: 0.75rem; line-height: 1.6; border: 1px solid var(--axis); color: var(--muted); border-radius: 999px; padding: 0 8px; white-space: nowrap; }
+.tag.on { border-color: var(--focus); color: var(--focus); }
+/* A status dot, filled when on. */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--muted); flex: none; }
+.dot.on { background: var(--muted); }
+
+/* ---------- utilities ---------- */
+.stack > * + * { margin-top: var(--gap); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.center { text-align: center; }
+.error { color: var(--red); }
+.warn { color: var(--warn); }
+/* Colour is never the only signal: errors and warnings lead with an icon. */
+.error::before, .toast:not(.info)::before { content: "✕\00a0"; font-weight: 700; }
+.warn::before { content: "▲\00a0"; font-size: 0.85em; } /* ▲, not ⚠: ⚠ turns into a colour emoji on many devices */
+.blue { color: var(--blue); }
+.red { color: var(--red); }
+.grey { color: var(--grey); }
+.mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+ul.plain, ol.plain { list-style: none; margin: 0; padding: 0; }
+
+/* ---------- shared extras (every new style) ---------- */
+p.lead { font-size: 1.12em; color: var(--ink); }
+code, kbd { font-family: var(--font-mono); font-size: 0.9em; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--axis); }
+td { padding: 8px; border-bottom: 1px solid var(--line); }
+th.num, td.num { text-align: right; }
+.list li { display: flex; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.list li .grow { color: var(--ink); }
+
+/* ---------- Civic ---------- */
+body { font-size: 17px; line-height: 1.6; }
+h1 { font-size: 2.1rem; font-weight: 700; }
+h1::after { content: ""; display: block; width: 72px; height: 6px; background: var(--accent); margin-top: 10px; }
+.masthead h1::after { display: none; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.2rem; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--ink); }
+a { text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.masthead-bar { border-bottom: 4px solid var(--cell); }
+.masthead h1 { text-align: left; font-size: 20px; font-weight: 700; }
+button { font-size: 16px; font-weight: 400; border-radius: 4px; background: var(--surface); color: var(--ink); }
+button.primary { font-weight: 700; border-radius: 4px; }
+button.ghost { background: transparent; text-decoration: underline; text-underline-offset: 0.15em; color: var(--focus); }
+label { font-size: 16px; font-weight: 700; color: var(--ink); }
+input, select, textarea { border-radius: 4px; background: var(--surface); }
+.tabs { border-radius: 4px; }
+.tabs button { border-radius: 3px; background: transparent; }
+.card { border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 16px 0 0; }
+/* Dialogs keep a box: an open section only works on the page. */
+.overlay > .card { border: 1px solid var(--card-line); border-radius: var(--radius); padding: 20px; }
+.banner { border: 0; border-left: 6px solid var(--focus); border-radius: 0; background: var(--surface); padding: 12px 16px; }
+.tag { border-radius: 3px; }
+th { font-size: 15px; font-weight: 700; color: var(--ink); border-bottom: 2px solid var(--ink); }
+tbody tr:nth-child(odd) td { background: var(--surface); }
+
+/* ---------- page ---------- */
+[hidden] { display: none !important; }
+/* Adaptive Volume tester. Chart tokens for both styles and themes. */
+:root { --curve: var(--focus); --band: var(--blue); --cap: var(--red); --quiet: var(--muted); }
+
+.intro { max-width: 70ch; }
+.layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; align-items: start; }
+.layout .chart-col { grid-column: 2; grid-row: 1; position: sticky; top: 0; padding-top: 8px; background: var(--bg); z-index: 2; }
+.layout .fields { grid-column: 1; grid-row: 1; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .layout .chart-col, .layout .fields { grid-column: 1; }
+  .layout .fields { grid-row: 2; }
+  .layout .chart-col { margin: 0 -16px; padding: 8px 16px 8px; border-bottom: 1px solid var(--line); }
+}
+#chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
+#chart text { font-family: var(--font-body); font-size: 12px; fill: var(--muted); }
+#chart .grid { stroke: var(--line); stroke-width: 1; }
+#chart .curve { fill: none; stroke: var(--curve); stroke-width: 3; stroke-linejoin: round; }
+#chart .band { fill: var(--band); fill-opacity: 0.14; }
+#chart .capband { fill: var(--cap); fill-opacity: 0.12; }
+#chart .capline { stroke: var(--cap); stroke-width: 1.5; stroke-dasharray: 5 4; }
+#chart text.cap { fill: var(--cap); }
+#chart .quietline { stroke: var(--quiet); stroke-width: 1.5; stroke-dasharray: 2 4; }
+#chart .cursor { stroke: var(--axis); stroke-width: 1; }
+#chart .dot { fill: var(--curve); stroke: var(--bg); stroke-width: 2; }
+#chart text.mark { fill: var(--ink-2); }
+.readout { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); min-height: 1.6em; margin: 4px 0 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; color: var(--muted); margin: 6px 0 0; padding: 0; list-style: none; }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { width: 28px; height: 12px; flex: none; }
+.chart-msg { padding: 48px 0; text-align: center; color: var(--muted); }
+
+.fields section { margin: 0 0 24px; }
+.fields h2 { margin-bottom: 12px; }
+.field { margin: 0 0 16px; }
+.field .help { font-size: 14px; color: var(--muted); margin: 2px 0 6px; }
+.field .tabs { flex-wrap: wrap; height: auto; min-height: var(--ctl); }
+.field .tabs button { min-height: 30px; }
+.slider { display: flex; align-items: center; gap: 12px; }
+.slider input[type=range] { flex: 1; min-height: 0; padding: 0; border: 0; background: none; accent-color: var(--accent); }
+.slider output { min-width: 3.5em; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.anchor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: end; }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.check input { width: 22px; height: 22px; min-height: 0; accent-color: var(--accent); margin: 0; }
+textarea { font-family: var(--font-mono); min-height: 8em; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--gap); margin: 8px 0 24px; }
+#copied { align-self: center; }
+.masthead .nav label { margin: 0; font-size: 14px; color: var(--muted); font-weight: 400; align-self: center; }
+
+/* ---------- Home Assistant style ---------- */
+/* HA's default theme: Roboto (or the system sans), its blue primary, cards with 12px corners. */
+:root[data-style="ha"] {
+  --bg: #111111; --surface: #1c1c1c; --cell: #2a2a2a;
+  --ink: #e1e1e1; --heading: #e1e1e1; --bold: #e1e1e1; --ink-2: #e1e1e1; --muted: #9b9b9b;
+  --line: #2f2f2f; --axis: #6f6f6f; --tab-on: #3d3d3d;
+  --accent: #03a9f4; --accent-hover: #0288d1; --accent-ink: #111111; --card-line: #2f2f2f;
+  --focus: #03a9f4; --ring: rgba(255, 255, 255, 0.12); --scrim: rgba(0, 0, 0, 0.8);
+  --blue: #03a9f4; --red: #ef5350; --grey: #bdbdbd; --warn: #ffa600;
+  --font-display: Roboto, "Noto Sans", system-ui, sans-serif; --font-body: Roboto, "Noto Sans", system-ui, sans-serif;
+  --radius: 8px;
+}
+:root[data-style="ha"][data-theme="light"] {
+  --bg: #fafafa; --surface: #ffffff; --cell: #f0f0f0;
+  --ink: #212121; --heading: #212121; --bold: #212121; --ink-2: #212121; --muted: #616161;
+  --line: #e0e0e0; --axis: #949494; --tab-on: #ffffff;
+  --accent: #0288d1; --accent-hover: #0277bd; --accent-ink: #ffffff; --card-line: #e0e0e0;
+  --focus: #0277bd; --ring: rgba(0, 0, 0, 0.12); --scrim: rgba(250, 250, 250, 0.9);
+  --blue: #03a9f4; --red: #c62828; --grey: #616161; --warn: #8a5a00;
+}
+:root[data-style="ha"] body { font-size: 15px; }
+:root[data-style="ha"] h1::after { display: none; }
+:root[data-style="ha"] h1, :root[data-style="ha"] h2 { font-weight: 500; }
+:root[data-style="ha"] .masthead-bar { border-bottom: 1px solid var(--line); background: var(--surface); }
+:root[data-style="ha"] .masthead h1 { font-weight: 400; }
+:root[data-style="ha"] .fields section,
+:root[data-style="ha"] .layout .chart-col { background: var(--surface); border-radius: 12px; padding: 16px; border: 1px solid var(--card-line); }
+:root[data-style="ha"] .tabs, :root[data-style="ha"] .tabs button { border-radius: 8px; }
+:root[data-style="ha"] button, :root[data-style="ha"] input, :root[data-style="ha"] textarea { border-radius: 8px; }
+:root[data-style="ha"] label, :root[data-style="ha"] .check { font-weight: 500; }
+:root[data-style="ha"] .me { display: none; }
+@media (max-width: 860px) {
+  :root[data-style="ha"] .layout .chart-col { margin: 0; border-radius: 12px; }
+}

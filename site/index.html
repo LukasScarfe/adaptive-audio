@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d1a0e">
+<title>Adaptive Volume Tester</title>
+<meta name="description" content="Try Adaptive Volume settings and see the volume your speakers would start at through the day.">
+<link rel="icon" href="favicon-32x32.png">
+<script>
+  // Dark is the default. Apply a saved style and theme before first paint.
+  try {
+    var q = new URLSearchParams(location.search);
+    var t = q.get("theme"), s = q.get("style");
+    if (t === "light" || t === "dark") localStorage.setItem("adaptive-volume-theme", t);
+    if (s === "ha" || s === "lukas") localStorage.setItem("adaptive-volume-style", s);
+    if (localStorage.getItem("adaptive-volume-theme") === "light") document.documentElement.setAttribute("data-theme", "light");
+    if (localStorage.getItem("adaptive-volume-style") === "ha") document.documentElement.setAttribute("data-style", "ha");
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="masthead-bar">
+  <header class="masthead wrap">
+    <a class="me" href="https://lukasscarfe.com/" aria-label="Lukas Scarfe">
+      <img class="logo-dark" src="logo-dark.png" alt=""><img class="logo-light" src="logo-light.png" alt="">
+    </a>
+    <h1>Adaptive Volume tester</h1>
+    <nav class="nav">
+      <div class="tabs" role="group" aria-label="Style">
+        <button data-style-btn="lukas" aria-pressed="true">Moss</button><button data-style-btn="ha" aria-pressed="false">Home Assistant</button>
+      </div>
+    </nav>
+    <button class="theme-btn" id="theme-toggle" aria-label="Switch to light mode"></button>
+  </header>
+</div>
+
+<main class="wrap">
+  <p class="intro">Try settings for <a href="https://github.com/LukasScarfe/ha-adaptive-volume">Adaptive Volume</a>
+  and see the volume your speakers would start at through the day. Nothing here changes your Home Assistant.
+  To use settings you like, enter them in Adaptive Volume's Configure page.</p>
+
+  <div class="layout">
+    <div class="chart-col">
+      <div id="chart-box"><p class="chart-msg" id="chart-msg">Loading the calculator…</p></div>
+      <p class="readout" id="readout" aria-live="polite"></p>
+      <ul class="legend" id="legend" hidden>
+        <li><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="0" x2="28" y1="6" y2="6" style="stroke:var(--curve);stroke-width:3"/></svg>Start volume</li>
+        <li data-k="band"><svg viewBox="0 0 28 12" aria-hidden="true"><rect width="28" height="12" style="fill:var(--band);fill-opacity:.3"/></svg>Changing</li>
+        <li data-k="cap"><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="0" x2="28" y1="6" y2="6" style="stroke:var(--cap);stroke-width:1.5;stroke-dasharray:5 4"/></svg>Night cap</li>
+        <li><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="0" x2="28" y1="6" y2="6" style="stroke:var(--quiet);stroke-width:1.5;stroke-dasharray:2 4"/></svg>Quiet volume</li>
+      </ul>
+      <p class="error" id="error" hidden></p>
+    </div>
+
+    <form class="fields" id="fields" autocomplete="off" onsubmit="return false">
+      <div class="actions">
+        <button type="button" id="copy">Copy link to these settings</button>
+        <button type="button" class="ghost" id="reset">Start again</button>
+        <span id="copied" class="muted small" aria-live="polite"></span>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

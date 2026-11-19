@@ -29,7 +29,19 @@ custom_components/adaptive_volume/
 tests/test_schedule.py   python3 tests/test_schedule.py
 dev/docker-compose.yml   throwaway HA on raccoon:8126; dev/config/ is gitignored
 dev/e2e.py               end-to-end checks against the dev HA's demo speakers
+site/                    the online tester (GitHub Pages): index.html + app.js + style.css (lukas.css
+                         + a Home Assistant style); runs const/schedule/curve.py in Pyodide
+.github/workflows/pages.yml   publishes site/ + those three .py files into py/ on push to main
 ```
+
+## Online tester
+
+https://lukasscarfe.github.io/ha-adaptive-volume/ draws the curve from the integration's own
+`curve.builder`, so keep `schedule.py`, `curve.py` and `const.py` free of HA imports. Settings ride in
+the URL hash (base64url JSON of the stored options, plus `rise`/`set`); `config_flow.tester_url`
+builds the link at the top of the setup page, with time entities and sun times resolved to today.
+Preview locally: copy `site/` and the three .py files (into `py/`) to a scratch folder and serve it
+with `python3 -m http.server`; screenshot with `~/scripts/screenshot.sh` (`?style=ha`, `?theme=light`).
 
 ## Dev loop
 

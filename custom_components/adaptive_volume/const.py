@@ -77,5 +77,7 @@ DEFAULTS = {
 
 CURVE_SAMPLE_MINUTES = 10  # the sensor's 24 h `curve` attribute: one value per 10 min
 
+TESTER_URL = "https://lukasscarfe.github.io/ha-adaptive-volume/"  # the GitHub Pages tester (site/)
+
 URL_BASE = "/adaptive_volume_static"
 CARD_URL = f"{URL_BASE}/adaptive-volume-card.js"

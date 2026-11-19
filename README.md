@@ -3,6 +3,9 @@
 Your speakers start at a volume that suits the time of day: louder in the afternoon, quieter at
 night. If you turn a speaker up or down while it plays, it stays where you put it.
 
+**[Try the settings in your browser](https://lukasscarfe.github.io/ha-adaptive-volume/)**
+and see the volume through the day as a chart, before or after you install it.
+
 ## How it works
 
 - **A volume for each part of the day.** Set a daytime, evening and night volume, and the time
@@ -26,6 +29,9 @@ night. If you turn a speaker up or down while it plays, it stays where you put i
 ## Setting it up
 
 *Settings → Devices & services → Add integration → Adaptive Volume.* Everything is on one page.
+To see what a schedule does before you set it, try it in the
+[online tester](https://lukasscarfe.github.io/ha-adaptive-volume/): it draws the volume through
+the day as you change the settings. The setup page links to it with your saved settings filled in.
 Press Create to save it. Change anything later with **Configure**, which shows the same page. The
 card shows the day's volume as a chart.
 

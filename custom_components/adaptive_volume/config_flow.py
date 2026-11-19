@@ -7,6 +7,8 @@ on submit. A submit saves straight away unless something is missing or the sched
 
 from __future__ import annotations
 
+import base64
+import json
 from typing import Any
 
 import voluptuous as vol
@@ -51,6 +53,7 @@ from .const import (
     DOMAIN,
     RETIRED_OPTIONS,
     SCHEDULE_TYPES,
+    TESTER_URL,
 )
 from .controller import entity_minute, sun_minutes
 
@@ -201,6 +204,34 @@ def _finish(options: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def tester_url(hass, options: dict[str, Any]) -> str:
+    """The online tester, opened with these settings (time entities and sun times as they are
+    today). The settings ride in the URL hash, so they never reach a server."""
+    try:
+        o = _with_defaults(options)
+        em = lambda e: entity_minute(hass, e)  # noqa: E731
+        clock = lambda m: f"{int(m) // 60 % 24:02d}:{int(m) % 60:02d}"  # noqa: E731
+        rise, set_ = sun_minutes(hass, dt_util.now().date())
+        keys = (CONF_SCHEDULE_TYPE, CONF_CURVE, CONF_DAY_VOLUME, CONF_USE_EVENING, CONF_EVENING_VOLUME,
+                CONF_NIGHT_VOLUME, CONF_POINTS, CONF_QUIET_VOLUME, CONF_CAP_VOLUME)
+        out: dict[str, Any] = {k: o[k] for k in keys}
+        out[CONF_CAP_ENABLED] = bool(o[CONF_CAP_ENABLED] or o.get(CONF_CAP_ENTITY))
+        start, end = curve.cap_window(o, em)
+        out[CONF_CAP_START], out[CONF_CAP_END] = clock(start), clock(end)
+        for name, anchor, _ in curve.anchors({**o, CONF_USE_EVENING: True}, em):
+            try:
+                at = clock(anchor.resolve(rise, set_))
+            except schedule.ScheduleError:
+                at = str(o[name][A_TIME])[:5]
+            out[name] = {A_TIME: at, A_RAMP: anchor.ramp}
+        if rise is not None and set_ is not None:
+            out["rise"], out["set"] = clock(rise), clock(set_)
+        raw = json.dumps(out, separators=(",", ":")).encode()
+        return f"{TESTER_URL}#{base64.urlsafe_b64encode(raw).decode().rstrip('=')}"
+    except Exception:  # noqa: BLE001 - never let the link break the page
+        return TESTER_URL
+
+
 def check_schedule(hass, options: dict[str, Any]) -> str | None:
     """None if the schedule works today, else the error text."""
     try:
@@ -233,7 +264,7 @@ class _Page:
         sun = ""
         if rise is not None and set_ is not None:
             sun = f"Today: sunrise {rise // 60:02d}:{rise % 60:02d}, sunset {set_ // 60:02d}:{set_ % 60:02d}."
-        return {"sun": sun, "error": err or ""}
+        return {"sun": sun, "error": err or "", "tester": tester_url(self.hass, self.opts)}
 
     async def _submit(self, step_id: str, user_input: dict[str, Any]):
         """Apply the input; show the page again if something's wrong, else None."""

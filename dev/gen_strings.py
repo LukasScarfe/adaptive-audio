@@ -29,8 +29,9 @@ def page(save):
     return {
         "title": "Adaptive Volume",
         "description": (
-            "Sets the volume your speakers start at through the day. The Adaptive Volume card "
-            "shows the day's volume as a chart. {sun}"
+            "[Try these settings in your browser]({tester}) to see the day's volume as a chart. "
+            "It opens with the settings saved here.\n\n"
+            "Sets the volume your speakers start at through the day. {sun}"
         ),
         "submit": save,
         "data": {"name": "Name"},

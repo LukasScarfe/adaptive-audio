@@ -11,3 +11,4 @@ dev/config/*
 # Editors / OS
 .DS_Store
 *.swp
+site/py/

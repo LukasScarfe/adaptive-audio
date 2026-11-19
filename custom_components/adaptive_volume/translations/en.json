@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Adaptive Volume",
-        "description": "Sets the volume your speakers start at through the day. The Adaptive Volume card shows the day's volume as a chart. {sun}",
+        "description": "[Try these settings in your browser]({tester}) to see the day's volume as a chart. It opens with the settings saved here.\n\nSets the volume your speakers start at through the day. {sun}",
         "submit": "Create",
         "data": {
           "name": "Name"
@@ -133,7 +133,7 @@
     "step": {
       "init": {
         "title": "Adaptive Volume",
-        "description": "Sets the volume your speakers start at through the day. The Adaptive Volume card shows the day's volume as a chart. {sun}",
+        "description": "[Try these settings in your browser]({tester}) to see the day's volume as a chart. It opens with the settings saved here.\n\nSets the volume your speakers start at through the day. {sun}",
         "submit": "Save",
         "sections": {
           "speakers": {
