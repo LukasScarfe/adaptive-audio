@@ -312,6 +312,10 @@ textarea { font-family: var(--font-mono); min-height: 8em; }
 :root[data-style="ha"] button, :root[data-style="ha"] input, :root[data-style="ha"] textarea { border-radius: 8px; }
 :root[data-style="ha"] label, :root[data-style="ha"] .check { font-weight: 500; }
 :root[data-style="ha"] .me { display: none; }
+:root[data-style="ha"] .masthead { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "title nav theme"; }
+@media (max-width: 640px) {
+  :root[data-style="ha"] .masthead { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title theme" "nav nav"; }
+}
 @media (max-width: 860px) {
   :root[data-style="ha"] .layout .chart-col { margin: 0; border-radius: 12px; }
 }
