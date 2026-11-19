@@ -4,12 +4,15 @@ Rules:
 - A player that starts playing after `idle_gap` minutes of not playing gets the start volume:
   the quiet volume while quiet is active, else the schedule's target, never above the cap.
 - With "Adapt while playing" on, every minute a playing player moves toward that volume by at
-  most `adapt_step` %. A hand change (any volume change Adaptive Volume didn't make) stops
+  most ADAPT_STEP % (1 %; the curve itself moves slower, so this only matters when catching up). A hand change (any volume change Adaptive Volume didn't make) stops
   adapting that player until its next fresh start, or for `autoreset` minutes if that is set.
 - With it off, the volume is left alone mid-play.
+- The night cap is on while its switch (the `cap_enabled` option) or its linked entity is on, and
+  then applies during cap hours (clock times, or time entities such as a time helper).
 - Either way, a raise above the cap is pulled back to the cap (during cap hours, or at any time
   while quiet is active, when the cap is the quiet volume). Turning quiet on pulls playing
   players down to the quiet volume.
+- Anchors and cap hours can follow time entities; a change to one rebuilds the schedule.
 - A player whose source is in `skip_sources` (e.g. the turntable's Line In) is never touched.
 """
 
@@ -43,11 +46,10 @@ from homeassistant.util import dt as dt_util
 
 from . import curve, schedule
 from .const import (
-    CONF_ADAPT_STEP,
+    ADAPT_STEP,
     CONF_AUTORESET,
     CONF_CAP_ENABLED,
-    CONF_CAP_END,
-    CONF_CAP_START,
+    CONF_CAP_ENTITY,
     CONF_CAP_VOLUME,
     CONF_IDLE_GAP,
     CONF_PLAYERS,
@@ -72,6 +74,27 @@ def sun_minutes(hass: HomeAssistant, day: date) -> tuple[int | None, int | None]
             local = dt_util.as_local(when)
             out.append(local.hour * 60 + local.minute)
     return out[0], out[1]
+
+
+def entity_minute(hass: HomeAssistant, entity_id: str) -> int | None:
+    """Time of day (minutes after midnight, local) a time entity holds: a time helper
+    (input_datetime with a time, or a time entity) or a timestamp sensor such as
+    sensor.sun_next_rising. None if it has no usable time right now."""
+    st = hass.states.get(entity_id)
+    if st is None or st.state in (STATE_UNAVAILABLE, STATE_UNKNOWN, ""):
+        return None
+    if st.domain == "input_datetime":
+        if not st.attributes.get("has_time", True):
+            return None
+        h, m = st.attributes.get("hour"), st.attributes.get("minute")
+        if isinstance(h, int) and isinstance(m, int):
+            return h * 60 + m
+    when = dt_util.parse_datetime(st.state)
+    if when is not None:
+        local = dt_util.as_local(when) if when.tzinfo else when
+        return local.hour * 60 + local.minute
+    t = dt_util.parse_time(st.state)
+    return None if t is None else t.hour * 60 + t.minute
 
 
 class AdaptiveVolumeController:
@@ -122,6 +145,12 @@ class AdaptiveVolumeController:
             self._unsubs.append(
                 async_track_state_change_event(self.hass, [quiet_entity], self._on_quiet_entity)
             )
+        if cap_entity := self.opt(CONF_CAP_ENTITY):
+            self._unsubs.append(
+                async_track_state_change_event(self.hass, [cap_entity], self._on_cap_entity)
+            )
+        if times := curve.time_entities(self.entry.options):
+            self._unsubs.append(async_track_state_change_event(self.hass, times, self._on_time_entity))
         self._unsubs.append(async_track_time_interval(self.hass, self._on_tick, timedelta(minutes=1)))
         self._was_quiet = self.quiet_active
 
@@ -150,7 +179,9 @@ class AdaptiveVolumeController:
             rise = set_ = None
             if curve.uses_sun(self.entry.options):
                 rise, set_ = sun_minutes(self.hass, today)
-            self._fn, self.marks = curve.builder(self.entry.options, rise, set_)
+            self._fn, self.marks = curve.builder(
+                self.entry.options, rise, set_, lambda e: entity_minute(self.hass, e)
+            )
             self.schedule_error = None
         except schedule.ScheduleError as err:
             self._fn, self.marks = None, []
@@ -187,14 +218,23 @@ class AdaptiveVolumeController:
         return False
 
     @property
+    def cap_on(self) -> bool:
+        """The night cap is switched on: its own switch, or the linked entity is on."""
+        if self.opt(CONF_CAP_ENABLED):
+            return True
+        if entity := self.opt(CONF_CAP_ENTITY):
+            st = self.hass.states.get(entity)
+            return st is not None and st.state == "on"
+        return False
+
+    def cap_window(self) -> tuple[int, int]:
+        return curve.cap_window(self.entry.options, lambda e: entity_minute(self.hass, e))
+
+    @property
     def cap_hours_active(self) -> bool:
-        if not self.opt(CONF_CAP_ENABLED):
+        if not self.cap_on:
             return False
-        return schedule.in_window(
-            self._now_minutes(),
-            schedule.parse_clock(self.opt(CONF_CAP_START)),
-            schedule.parse_clock(self.opt(CONF_CAP_END)),
-        )
+        return schedule.in_window(self._now_minutes(), *self.cap_window())
 
     @property
     def cap(self) -> float | None:
@@ -289,7 +329,7 @@ class AdaptiveVolumeController:
         goal = self.start_volume
         if goal is None:
             return
-        step = max(0.5, float(self.opt(CONF_ADAPT_STEP)))
+        step = ADAPT_STEP
         for pid in self.players:
             st = self.hass.states.get(pid)
             if st is None or st.state != STATE_PLAYING or self._skipped(st) or self._taken_over(pid):
@@ -336,6 +376,23 @@ class AdaptiveVolumeController:
                 self.manual[pid] = now
                 self.notify()
         self.hass.async_create_task(self._enforce_cap(pid, new))
+
+    @callback
+    def _on_cap_entity(self, event: Event[EventStateChangedData]) -> None:
+        self.cap_changed()
+
+    @callback
+    def cap_changed(self) -> None:
+        """The cap may have turned on: pull playing players down to it."""
+        for pid in self.players:
+            if (st := self.hass.states.get(pid)) is not None:
+                self.hass.async_create_task(self._enforce_cap(pid, st))
+        self.notify()
+
+    @callback
+    def _on_time_entity(self, event: Event[EventStateChangedData]) -> None:
+        self._build()
+        self.cap_changed()
 
     @callback
     def _on_quiet_entity(self, event: Event[EventStateChangedData]) -> None:

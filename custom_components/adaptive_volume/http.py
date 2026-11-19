@@ -19,33 +19,30 @@ from homeassistant.util import dt as dt_util
 from . import curve, plot, schedule
 from .const import (
     CONF_CAP_ENABLED,
-    CONF_CAP_END,
-    CONF_CAP_START,
+    CONF_CAP_ENTITY,
     CONF_CAP_VOLUME,
     CONF_QUIET_VOLUME,
     CURVE_SAMPLE_MINUTES,
     DOMAIN,
     PREVIEW_URL,
 )
-from .controller import sun_minutes
+from .controller import entity_minute, sun_minutes
 
 _STORE = f"{DOMAIN}_previews"
 
 
 def render_options(hass: HomeAssistant, options: dict[str, Any]) -> str:
     now = dt_util.now()
+    em = lambda e: entity_minute(hass, e)  # noqa: E731
     try:
         rise, set_ = sun_minutes(hass, now.date()) if curve.uses_sun(options) else (None, None)
-        fn, marks = curve.builder(options, rise, set_)
+        fn, marks = curve.builder(options, rise, set_, em)
         samples, error = curve.samples(fn), None
     except schedule.ScheduleError as err:
         samples, marks, error = [], [], str(err)
     cap_window = None
-    if curve.opt(options, CONF_CAP_ENABLED):
-        cap_window = [
-            schedule.parse_clock(curve.opt(options, CONF_CAP_START)),
-            schedule.parse_clock(curve.opt(options, CONF_CAP_END)),
-        ]
+    if curve.opt(options, CONF_CAP_ENABLED) or options.get(CONF_CAP_ENTITY):
+        cap_window = list(curve.cap_window(options, em))
     return plot.render(
         samples,
         CURVE_SAMPLE_MINUTES,

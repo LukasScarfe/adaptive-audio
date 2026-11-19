@@ -12,14 +12,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import curve
 from .const import (
     CONF_CAP_ENABLED,
-    CONF_CAP_END,
-    CONF_CAP_START,
+    CONF_CAP_ENTITY,
     CONF_CAP_VOLUME,
     CONF_QUIET_VOLUME,
     CURVE_SAMPLE_MINUTES,
 )
 from .entity import AdaptiveVolumeEntity
-from .schedule import parse_clock
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
@@ -43,8 +41,8 @@ class TargetSensor(AdaptiveVolumeEntity, SensorEntity):
         c = self.controller
         opts = c.entry.options
         cap_window = None
-        if c.opt(CONF_CAP_ENABLED):
-            cap_window = [parse_clock(c.opt(CONF_CAP_START)), parse_clock(c.opt(CONF_CAP_END))]
+        if c.opt(CONF_CAP_ENABLED) or c.opt(CONF_CAP_ENTITY):
+            cap_window = list(c.cap_window())
         return {
             "start_volume": c.start_volume,
             "schedule_type": curve.schedule_type(opts),
@@ -54,6 +52,7 @@ class TargetSensor(AdaptiveVolumeEntity, SensorEntity):
             "taken_over": sorted(c.manual),
             "quiet_active": c.quiet_active,
             "quiet_volume": c.opt(CONF_QUIET_VOLUME),
+            "cap_on": c.cap_on,
             "cap_active": c.cap is not None,
             "cap": c.cap,
             "cap_volume": c.opt(CONF_CAP_VOLUME),

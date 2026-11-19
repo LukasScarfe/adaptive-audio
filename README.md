@@ -7,23 +7,26 @@ stands until the next fresh start.
 ## What it does
 
 - **Simple schedule (like Adaptive Lighting):** Day, Evening (optional) and Night levels, changed
-  at Wake, Evening and Bedtime anchors. Each anchor is a fixed time or sunrise/sunset plus an
-  offset, can be clamped ("sunset, but not before 21:30"), and has a ramp length. Ramps are
-  centred on the anchor or end at it.
+  at Wake, Evening and Bedtime. Each is a clock time, or follows a time entity (a time helper, or
+  a sensor like *Sun next rising*), and has a ramp length centred on that time.
 - **Custom schedule:** your own points, one per line, e.g. `07:00 20`, `sunrise+30 25`,
   `sunset-45 30`. Each transition spans the gap to the next point.
-- **Curves:** Sigmoid (an S-curve that eases in and out, with a steepness setting), Linear, or Steps.
-- **Preview:** Configure shows today's curve as a picture before you save.
+- **Curves:** Sigmoid (an S-curve that eases in and out), Linear, or Steps.
+- **Setup and Configure** share one menu: Speakers and behaviour, Schedule, Quiet and night cap,
+  then Create / Save. The Schedule menu shows today's curve at the top and redraws it after each
+  change. Each form's button is *Back*; nothing is saved until Create / Save (the dialog's X
+  discards the changes).
 - **Fresh starts:** a speaker gets the schedule's volume when it starts playing after the
   **idle gap** (default 10 min) of not playing. Shorter pauses keep your volume.
-- **Adapt while playing (switch):** playing speakers glide along the curve, at most *Adapt step*
-  % per minute. If you change a speaker's volume by hand, it stops adapting until its next fresh
+- **Adapt while playing (switch):** playing speakers glide along the curve (at most 1 % a
+  minute; the curve itself moves slower than that). If you change a speaker's volume by hand, it stops adapting until its next fresh
   start, or for *Hand-change reset* minutes if you set that.
 - **Quiet:** a Quiet switch per instance, and optionally a linked entity (a night-mode switch, an
   `input_select` in a given state...). While quiet, fresh starts use the quiet volume, it is also
   the maximum, and turning quiet on pulls playing speakers down to it.
 - **Night cap (optional):** during cap hours, turning a speaker above the cap volume pulls it
-  straight back. Fresh starts never go above it either.
+  straight back. Fresh starts never go above it either. It is on while its Night cap switch is
+  on, or while a linked boolean entity is on. Cap hours are clock times or time entities.
 - **Skip sources:** sources where it never touches the volume, e.g. `Line In` for a turntable.
 
 ## Card
@@ -46,6 +49,7 @@ volume today. Times are in Home Assistant's time zone.
 |---|---|
 | `switch.…_adaptive_volume` | Turns the instance on or off |
 | `switch.…_quiet` | Your quiet switch (attribute `quiet_active` includes the linked entity) |
+| `switch.…_night_cap` | The night cap on/off (the same setting as in Configure; attribute `cap_on` includes the linked entity) |
 | `switch.…_adapt_while_playing` | Glide playing speakers along the curve (attribute `taken_over`) |
 | `sensor.…_target_volume` | The schedule's volume now; attributes: `start_volume`, `cap`, `curve` (24 h, 10-min steps), `last_applied`... |
 | `number.…_quiet_volume`, `number.…_cap_volume` | Change live, no reload |

@@ -6,15 +6,23 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+# Looks up a time entity's time of day (minutes after midnight), or None if it has none now.
+EntityMinute = Callable[[str], "int | None"]
+
 from . import schedule
 from .const import (
     A_EARLIEST,
+    A_ENTITY,
     A_KIND,
     A_LATEST,
     A_OFFSET,
     A_RAMP,
     A_TIME,
-    CONF_ALIGN,
+    ANCHORS,
+    CONF_CAP_END,
+    CONF_CAP_END_ENTITY,
+    CONF_CAP_START,
+    CONF_CAP_START_ENTITY,
     CONF_CURVE,
     CONF_DAY_VOLUME,
     CONF_EVENING_VOLUME,
@@ -22,7 +30,6 @@ from .const import (
     CONF_NIGHT_VOLUME,
     CONF_POINTS,
     CONF_SCHEDULE_TYPE,
-    CONF_STEEPNESS,
     CONF_USE_EVENING,
     CURVE_SAMPLE_MINUTES,
     DEFAULTS,
@@ -45,12 +52,16 @@ def curve_name(options: dict[str, Any]) -> str:
     return opt(options, CONF_CURVE)
 
 
-def _anchor(d: dict[str, Any] | None, default: dict[str, Any]) -> schedule.Anchor:
+def _anchor(d: dict[str, Any] | None, default: dict[str, Any], entity_minute: EntityMinute | None) -> schedule.Anchor:
     d = {**default, **(d or {})}
     clock = lambda v: None if v in (None, "") else schedule.parse_clock(v)  # noqa: E731
+    time = schedule.parse_clock(d.get(A_TIME) or default[A_TIME])
+    kind = d.get(A_KIND, "fixed")
+    if (eid := d.get(A_ENTITY)) and entity_minute and (m := entity_minute(eid)) is not None:
+        time, kind = m, "fixed"  # the entity wins; its time field is the fallback
     return schedule.Anchor(
-        kind=d.get(A_KIND, "fixed"),
-        time=schedule.parse_clock(d.get(A_TIME) or default[A_TIME]),
+        kind=kind,
+        time=time,
         offset=int(d.get(A_OFFSET) or 0),
         earliest=clock(d.get(A_EARLIEST)),
         latest=clock(d.get(A_LATEST)),
@@ -58,15 +69,33 @@ def _anchor(d: dict[str, Any] | None, default: dict[str, Any]) -> schedule.Ancho
     )
 
 
-def anchors(options: dict[str, Any]) -> list[tuple[str, schedule.Anchor, float]]:
+def anchors(options: dict[str, Any], entity_minute: EntityMinute | None = None) -> list[tuple[str, schedule.Anchor, float]]:
     """(name, anchor, level after it) for the simple schedule."""
-    out = [("wake", _anchor(options.get("wake"), DEFAULTS["wake"]), float(opt(options, CONF_DAY_VOLUME)))]
+    a = lambda name: _anchor(options.get(name), DEFAULTS[name], entity_minute)  # noqa: E731
+    out = [("wake", a("wake"), float(opt(options, CONF_DAY_VOLUME)))]
     if opt(options, CONF_USE_EVENING):
-        out.append(
-            ("evening", _anchor(options.get("evening"), DEFAULTS["evening"]), float(opt(options, CONF_EVENING_VOLUME)))
-        )
-    out.append(("bedtime", _anchor(options.get("bedtime"), DEFAULTS["bedtime"]), float(opt(options, CONF_NIGHT_VOLUME))))
+        out.append(("evening", a("evening"), float(opt(options, CONF_EVENING_VOLUME))))
+    out.append(("bedtime", a("bedtime"), float(opt(options, CONF_NIGHT_VOLUME))))
     return out
+
+
+def time_entities(options: dict[str, Any]) -> list[str]:
+    """Every time entity the schedule or cap hours follow (to rebuild when one changes)."""
+    out = [options[k] for k in (CONF_CAP_START_ENTITY, CONF_CAP_END_ENTITY) if options.get(k)]
+    if schedule_type(options) == "simple":
+        out += [(options.get(n) or {}).get(A_ENTITY) for n in ANCHORS]
+    return sorted({e for e in out if e})
+
+
+def cap_window(options: dict[str, Any], entity_minute: EntityMinute | None = None) -> tuple[int, int]:
+    """Cap start and end (minutes); a linked time entity wins over the clock time."""
+    out = []
+    for key, ekey in ((CONF_CAP_START, CONF_CAP_START_ENTITY), (CONF_CAP_END, CONF_CAP_END_ENTITY)):
+        m = None
+        if (eid := options.get(ekey)) and entity_minute:
+            m = entity_minute(eid)
+        out.append(schedule.parse_clock(opt(options, key)) if m is None else m)
+    return out[0], out[1]
 
 
 def uses_sun(options: dict[str, Any]) -> bool:
@@ -76,19 +105,20 @@ def uses_sun(options: dict[str, Any]) -> bool:
 
 
 def builder(
-    options: dict[str, Any], sunrise: int | None, sunset: int | None
+    options: dict[str, Any], sunrise: int | None, sunset: int | None, entity_minute: EntityMinute | None = None
 ) -> tuple[Callable[[int], float], list[dict[str, Any]]]:
     """A function minute -> volume % for these options and today's sun, plus the transitions
     (for plot markers). Raises ScheduleError if the schedule can't be used."""
     curve = curve_name(options)
-    steep = float(opt(options, CONF_STEEPNESS))
+    # Steepness and ramp position are fixed for now (not offered in the UI).
+    steep = float(DEFAULTS["steepness"])
+    align = schedule.ALIGN_CENTRE
     if schedule_type(options) == "custom":
         points = schedule.parse_points(opt(options, CONF_POINTS))
         marks = [{"name": "", "at": p.resolve(sunrise, sunset), "ramp": 0} for p in points]
         return (lambda m: schedule.target_volume(m, points, curve, sunrise, sunset, steep)), marks
-    named = anchors(options)
+    named = anchors(options, entity_minute)
     trs = schedule.transitions([(a, v) for _, a, v in named], sunrise, sunset)
-    align = opt(options, CONF_ALIGN)
     if schedule.overlapping(trs, curve, align):
         raise schedule.ScheduleError("the ramps overlap: shorten a ramp or move an anchor")
     marks = [

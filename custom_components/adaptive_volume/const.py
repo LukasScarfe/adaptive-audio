@@ -6,22 +6,22 @@ CONF_NAME = "name"
 CONF_PLAYERS = "players"
 CONF_IDLE_GAP = "idle_gap"  # minutes not playing before the next play counts as a fresh start
 CONF_SKIP_SOURCES = "skip_sources"  # comma-separated; e.g. "Line In"
-CONF_ADAPT_STEP = "adapt_step"  # max % per minute while adapting during playback
 CONF_AUTORESET = "autoreset"  # minutes after a hand change to resume adapting; 0 = next fresh start
 
 # Schedule
 CONF_SCHEDULE_TYPE = "schedule_type"  # "simple" or "custom"
 CONF_CURVE = "curve"  # "steps", "linear" or "sigmoid"
-CONF_STEEPNESS = "steepness"
-CONF_ALIGN = "align"  # "centre" or "end"
+CONF_STEEPNESS = "steepness"  # no longer in the UI; fixed at the default
+CONF_ALIGN = "align"  # no longer in the UI; ramps are centred
 CONF_DAY_VOLUME = "day_volume"
 CONF_EVENING_VOLUME = "evening_volume"
 CONF_NIGHT_VOLUME = "night_volume"
 CONF_USE_EVENING = "use_evening"
 ANCHORS = ("wake", "evening", "bedtime")  # option keys, each a dict of the fields below
-A_KIND = "kind"  # "fixed", "sunrise" or "sunset"
+A_ENTITY = "entity"  # optional time entity (time helper, sun sensor); overrides A_TIME
+A_KIND = "kind"  # 0.2 option: "fixed", "sunrise" or "sunset"
 A_TIME = "time"
-A_OFFSET = "offset"
+A_OFFSET = "offset"  # 0.2 options, still honoured for sun anchors
 A_EARLIEST = "earliest"
 A_LATEST = "latest"
 A_RAMP = "ramp"
@@ -33,22 +33,27 @@ CONF_QUIET_VOLUME = "quiet_volume"
 CONF_QUIET_ENTITY = "quiet_entity"
 CONF_QUIET_STATE = "quiet_state"
 CONF_CAP_ENABLED = "cap_enabled"
+CONF_CAP_ENTITY = "cap_entity"  # optional: the cap is also on while this entity is on
 CONF_CAP_START = "cap_start"
+CONF_CAP_START_ENTITY = "cap_start_entity"  # optional time entity, overrides cap_start
 CONF_CAP_END = "cap_end"
+CONF_CAP_END_ENTITY = "cap_end_entity"
 CONF_CAP_VOLUME = "cap_volume"
 
-# Options the number entities change live; changing only these doesn't reload the entry.
-LIVE_OPTIONS = {CONF_QUIET_VOLUME, CONF_CAP_VOLUME}
+# Options the number and Night cap entities change live; changing only these doesn't reload.
+LIVE_OPTIONS = {CONF_QUIET_VOLUME, CONF_CAP_VOLUME, CONF_CAP_ENABLED}
+
+# Options the UI no longer offers; dropped when an entry is saved.
+RETIRED_OPTIONS = ("adapt_step", CONF_STEEPNESS, CONF_ALIGN, CONF_MODE)
+
+ADAPT_STEP = 1  # % per minute at most while adapting; the curve itself moves slower than this
 
 SCHEDULE_TYPES = ["simple", "custom"]
 CURVES = ["sigmoid", "linear", "steps"]
-ALIGNS = ["centre", "end"]
-ANCHOR_KINDS = ["fixed", "sunrise", "sunset"]
 
 DEFAULTS = {
     CONF_IDLE_GAP: 10,
     CONF_SKIP_SOURCES: "",
-    CONF_ADAPT_STEP: 1,
     CONF_AUTORESET: 0,
     CONF_SCHEDULE_TYPE: "simple",
     CONF_CURVE: "sigmoid",
@@ -58,9 +63,9 @@ DEFAULTS = {
     CONF_EVENING_VOLUME: 30,
     CONF_NIGHT_VOLUME: 15,
     CONF_USE_EVENING: True,
-    "wake": {A_KIND: "fixed", A_TIME: "07:30:00", A_OFFSET: 0, A_RAMP: 60},
-    "evening": {A_KIND: "fixed", A_TIME: "19:00:00", A_OFFSET: 0, A_RAMP: 60},
-    "bedtime": {A_KIND: "fixed", A_TIME: "22:00:00", A_OFFSET: 0, A_RAMP: 90},
+    "wake": {A_TIME: "07:30:00", A_RAMP: 60},
+    "evening": {A_TIME: "19:00:00", A_RAMP: 60},
+    "bedtime": {A_TIME: "22:00:00", A_RAMP: 90},
     CONF_POINTS: "07:00 20\n10:00 40\n18:00 35\n22:00 15",
     CONF_QUIET_VOLUME: 10,
     CONF_QUIET_STATE: "on",

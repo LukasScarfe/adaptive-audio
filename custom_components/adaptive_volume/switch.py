@@ -1,4 +1,5 @@
-"""Enabled and Quiet switches. Both restore their state across restarts."""
+"""Enabled, Quiet, Adapt and Night cap switches. The first three restore their state across
+restarts; Night cap is the `cap_enabled` option, so it is saved with the entry."""
 
 from __future__ import annotations
 
@@ -10,12 +11,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from .const import CONF_CAP_ENABLED
 from .entity import AdaptiveVolumeEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
     c = entry.runtime_data
-    async_add_entities([EnabledSwitch(c, "enabled"), QuietSwitch(c, "quiet"), AdaptSwitch(c, "adapt")])
+    async_add_entities([EnabledSwitch(c, "enabled"), QuietSwitch(c, "quiet"), AdaptSwitch(c, "adapt"), CapSwitch(c, "night_cap")])
 
 
 class EnabledSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
@@ -90,3 +92,29 @@ class AdaptSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         self.controller.adapt = False
         self.controller.notify()
+
+
+class CapSwitch(AdaptiveVolumeEntity, SwitchEntity):
+    """The night cap's own switch (the same setting as the toggle in Configure). The cap is
+    also on while its linked entity is on; `cap_on` shows the combined result."""
+
+    _attr_icon = "mdi:volume-minus"
+
+    @property
+    def is_on(self) -> bool:
+        return bool(self.controller.opt(CONF_CAP_ENABLED))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"cap_on": self.controller.cap_on, "cap_active": self.controller.cap is not None}
+
+    async def _set(self, on: bool) -> None:
+        entry = self.controller.entry
+        self.hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_CAP_ENABLED: on})
+        self.controller.cap_changed()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._set(False)

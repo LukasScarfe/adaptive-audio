@@ -22,12 +22,14 @@ custom_components/adaptive_volume/
   http.py         preview view: flow stores pending options, embeds a signed /api/adaptive_volume/preview/<flow>.svg
   controller.py   per-entry state + event handling (player state changes, quiet entity, 1-min tick/adapt)
   __init__.py     setup; reloads on options change except LIVE_OPTIONS (the number entities)
-  config_flow.py  setup: user -> schedule -> simple|custom -> preview. Configure: a menu
-                  (speakers, schedule, quiet_cap, preview, save); nothing saved until Save
+  config_flow.py  setup and Configure share one menu (speakers, schedule, quiet_cap, save);
+                  schedule is a submenu (type, levels|points, back) with the preview image in its
+                  description. Form buttons say "Back" (the translation's `submit` key); HA has
+                  no real back button and the X can't be removed. Nothing saved until save
   frontend/adaptive-volume-card.js   the card, vanilla JS + SVG, registered in async_setup
   switch.py sensor.py number.py button.py entity.py   the per-instance entities (one service device)
   const.py        option keys + DEFAULTS
-  strings.json + translations/en.json   keep identical (generated together)
+  strings.json + translations/en.json   generated: edit dev/gen_strings.py, run it
 tests/test_schedule.py   python3 tests/test_schedule.py
 dev/docker-compose.yml   throwaway HA on raccoon:8126; dev/config/ is gitignored
 dev/e2e.py               end-to-end checks against the dev HA's demo speakers
