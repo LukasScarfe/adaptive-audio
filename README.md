@@ -1,3 +1,5 @@
+<img src="custom_components/adaptive_audio/brand/icon.png" alt="Adaptive Audio" width="96" align="right">
+
 ![Version](https://img.shields.io/github/v/release/LukasScarfe/adaptive-audio?style=for-the-badge)
 
 # Adaptive Audio for Home Assistant

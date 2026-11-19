@@ -25,6 +25,8 @@ custom_components/adaptive_audio/
   frontend/adaptive-audio-card.js   the card, vanilla JS + SVG, registered in async_setup
   switch.py sensor.py number.py button.py entity.py   the per-instance entities (one service device)
   const.py        option keys + DEFAULTS
+  brand/          icon.svg + dark_icon.svg (sources, lukas.css light / Moss dark tokens) rendered to
+                  icon.png 256 / icon@2x.png 512 and dark_icon(@2x).png, transparent; HA picks by theme
   strings.json + translations/en.json   generated: edit dev/gen_strings.py, run it
 tests/test_schedule.py   python3 tests/test_schedule.py
 dev/docker-compose.yml   throwaway HA on raccoon:8126; dev/config/ is gitignored
