@@ -276,7 +276,7 @@ class _Page:
         return None
 
 
-class AdaptiveVolumeConfigFlow(_Page, ConfigFlow, domain=DOMAIN):
+class AdaptiveAudioConfigFlow(_Page, ConfigFlow, domain=DOMAIN):
     VERSION = 1
     _with_name = True
 
@@ -295,10 +295,10 @@ class AdaptiveVolumeConfigFlow(_Page, ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        return AdaptiveVolumeOptionsFlow()
+        return AdaptiveAudioOptionsFlow()
 
 
-class AdaptiveVolumeOptionsFlow(_Page, OptionsFlow):
+class AdaptiveAudioOptionsFlow(_Page, OptionsFlow):
     def __init__(self) -> None:
         self.opts: dict[str, Any] | None = None
 

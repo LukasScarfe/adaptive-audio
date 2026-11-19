@@ -1,4 +1,4 @@
-"""Pure schedule math for Adaptive Volume. No Home Assistant imports, so it unit-tests alone.
+"""Pure schedule math for Adaptive Audio. No Home Assistant imports, so it unit-tests alone.
 
 Times are minutes after local midnight (0-1439) and the day is a circle. Two schedule types:
 

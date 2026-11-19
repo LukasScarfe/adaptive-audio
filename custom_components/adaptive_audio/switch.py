@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import CONF_CAP_ENABLED
-from .entity import AdaptiveVolumeEntity
+from .entity import AdaptiveAudioEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
     async_add_entities([EnabledSwitch(c, "enabled"), QuietSwitch(c, "quiet"), AdaptSwitch(c, "adapt"), CapSwitch(c, "night_cap")])
 
 
-class EnabledSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
+class EnabledSwitch(AdaptiveAudioEntity, SwitchEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         if (last := await self.async_get_last_state()) is not None:
@@ -39,7 +39,7 @@ class EnabledSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
         self.controller.notify()
 
 
-class QuietSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
+class QuietSwitch(AdaptiveAudioEntity, SwitchEntity, RestoreEntity):
     """Your own quiet switch. Quiet is also active while the linked entity is in its state;
     the `quiet_active` attribute shows the combined result."""
 
@@ -65,7 +65,7 @@ class QuietSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
         self.controller.quiet_changed()
 
 
-class AdaptSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
+class AdaptSwitch(AdaptiveAudioEntity, SwitchEntity, RestoreEntity):
     """Adapt while playing: glide playing speakers along the curve. A hand change takes a
     speaker over until its next fresh start (or the auto-reset time)."""
 
@@ -94,7 +94,7 @@ class AdaptSwitch(AdaptiveVolumeEntity, SwitchEntity, RestoreEntity):
         self.controller.notify()
 
 
-class CapSwitch(AdaptiveVolumeEntity, SwitchEntity):
+class CapSwitch(AdaptiveAudioEntity, SwitchEntity):
     """The night cap's own switch (the same setting as the toggle in Configure). The cap is
     also on while its linked entity is on; `cap_on` shows the combined result."""
 

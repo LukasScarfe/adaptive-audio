@@ -4,7 +4,7 @@ Rules:
 - A player that starts playing after `idle_gap` minutes of not playing gets the start volume:
   the quiet volume while quiet is active, else the schedule's target, never above the cap.
 - With "Adapt while playing" on, every minute a playing player moves toward that volume by at
-  most `max_rate` % (10 % by default). Starts, quiet mode and the night cap still apply at once. A hand change (any volume change Adaptive Volume didn't make) stops
+  most `max_rate` % (10 % by default). Starts, quiet mode and the night cap still apply at once. A hand change (any volume change Adaptive Audio didn't make) stops
   adapting that player until its next fresh start, or for `autoreset` minutes if that is set.
 - With it off, the volume is left alone mid-play.
 - The night cap is on while its switch (the `cap_enabled` option) or its linked entity is on, and
@@ -97,8 +97,8 @@ def entity_minute(hass: HomeAssistant, entity_id: str) -> int | None:
     return None if t is None else t.hour * 60 + t.minute
 
 
-class AdaptiveVolumeController:
-    """State and behaviour for one Adaptive Volume instance (config entry)."""
+class AdaptiveAudioController:
+    """State and behaviour for one Adaptive Audio instance (config entry)."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass

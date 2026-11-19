@@ -8,7 +8,7 @@ def st(e): return req("GET","/api/states/"+e)
 def call(d,s,data): req("POST",f"/api/services/{d}/{s}",data); time.sleep(1.2)
 P="media_player.living_room"
 def vol(): return st(P)["attributes"].get("volume_level")
-entry=[e for e in req("GET","/api/config/config_entries/entry") if e["domain"]=="adaptive_volume" and e["title"]=="Living room"][0]["entry_id"]
+entry=[e for e in req("GET","/api/config/config_entries/entry") if e["domain"]=="adaptive_audio" and e["title"]=="Living room"][0]["entry_id"]
 SPEAKERS={"players":[P,"media_player.walkman"],"idle_gap":0,"skip_sources":"Line In","autoreset":0,"max_rate":3}
 QUIET_CAP={"quiet_volume":10,"quiet_entity":"input_boolean.night_mode","quiet_state":"on",
            "cap_enabled":False,"cap_start":"22:00:00","cap_end":"07:00:00","cap_volume":25}
@@ -32,7 +32,7 @@ def options(**kw):
     time.sleep(2); return f["type"]
 def check(name, got, want):
     ok = abs((got or -1)-want)<0.011; print(("PASS" if ok else "FAIL"), name, "got", got, "want", want)
-tgt=int(st("sensor.adaptive_volume_living_room_target_volume")["state"])/100
+tgt=int(st("sensor.adaptive_audio_living_room_scheduled_volume")["state"])/100
 print("options:",options(idle_gap=0))
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.9})
 call("media_player","media_pause",{"entity_id":P}); call("media_player","media_play",{"entity_id":P})
@@ -44,12 +44,12 @@ check("linked quiet pulls down", vol(), 0.10)
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.5})
 check("quiet caps a raise", vol(), 0.10)
 call("input_boolean","turn_off",{"entity_id":"input_boolean.night_mode"})
-call("switch","turn_on",{"entity_id":"switch.adaptive_volume_living_room_quiet"})
+call("switch","turn_on",{"entity_id":"switch.adaptive_audio_living_room_quiet_mode"})
 call("media_player","media_pause",{"entity_id":P}); call("media_player","media_play",{"entity_id":P})
 check("quiet switch: start at quiet volume", vol(), 0.10)
-call("number","set_value",{"entity_id":"number.adaptive_volume_living_room_quiet_volume","value":6})
+call("number","set_value",{"entity_id":"number.adaptive_audio_living_room_quiet_volume","value":6})
 check("lower quiet volume applies live", vol(), 0.06)
-call("switch","turn_off",{"entity_id":"switch.adaptive_volume_living_room_quiet"})
+call("switch","turn_off",{"entity_id":"switch.adaptive_audio_living_room_quiet_mode"})
 print("options:",options(idle_gap=1))
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.7})
 call("media_player","media_pause",{"entity_id":P}); call("media_player","media_play",{"entity_id":P})
@@ -61,18 +61,18 @@ check("cap pulls a raise back", vol(), 0.25)
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.2})
 check("below cap is fine", vol(), 0.2)
 print("options:",options(idle_gap=0))
-call("switch","turn_off",{"entity_id":"switch.adaptive_volume_living_room_adaptive_volume"})
+call("switch","turn_off",{"entity_id":"switch.adaptive_audio_living_room_adaptive_audio"})
 call("media_player","media_pause",{"entity_id":P}); call("media_player","media_play",{"entity_id":P})
 check("disabled: hands off", vol(), 0.2)
-call("switch","turn_on",{"entity_id":"switch.adaptive_volume_living_room_adaptive_volume"})
-call("button","press",{"entity_id":"button.adaptive_volume_living_room_apply_volume_now"})
+call("switch","turn_on",{"entity_id":"switch.adaptive_audio_living_room_adaptive_audio"})
+call("button","press",{"entity_id":"button.adaptive_audio_living_room_set_volume_now"})
 check("apply button", vol(), tgt)
 check("apply button other speaker", st("media_player.walkman")["attributes"].get("volume_level"), tgt)
-s=st("sensor.adaptive_volume_living_room_target_volume"); print("steps+sun target:",s["state"],s["attributes"]["schedule_error"])
+s=st("sensor.adaptive_audio_living_room_scheduled_volume"); print("steps+sun target:",s["state"],s["attributes"]["schedule_error"])
 print("last_applied:",json.dumps(s["attributes"]["last_applied"]))
 
 # Adapt while playing: glide toward the target, a hand change takes the speaker over.
-SW="switch.adaptive_volume_living_room_adapt_while_playing"
+SW="switch.adaptive_audio_living_room_adjust_while_playing"
 print("options:",options(idle_gap=0))
 call("switch","turn_off",{"entity_id":SW})
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.25})

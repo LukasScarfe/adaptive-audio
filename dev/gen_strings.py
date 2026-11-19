@@ -6,7 +6,7 @@
 import json
 import pathlib
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "adaptive_volume"
+ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "adaptive_audio"
 
 def anchor(name, description):
     return {
@@ -27,7 +27,7 @@ def flat(title, data, desc, description=""):
 
 def page(save):
     return {
-        "title": "Adaptive Volume",
+        "title": "Adaptive Audio",
         "description": (
             "[Try these settings in your browser]({tester}) to see the day's volume as a chart. "
             "It opens with the settings saved here.\n\n"
@@ -118,7 +118,7 @@ options_page = page("Save")
 del options_page["data"], options_page["data_description"]
 
 strings = {
-    "title": "Adaptive Volume",
+    "title": "Adaptive Audio",
     "config": {"step": {"user": page("Create")}, "error": errors("Create")},
     "options": {"step": {"init": options_page}, "error": errors("Save")},
     "selector": {
@@ -127,7 +127,7 @@ strings = {
     },
     "entity": {
         "switch": {
-            "enabled": {"name": "Adaptive volume"},
+            "enabled": {"name": "Adaptive audio"},
             "quiet": {"name": "Quiet mode"},
             "adapt": {"name": "Adjust while playing"},
             "night_cap": {"name": "Night cap"},

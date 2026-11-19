@@ -1,0 +1,18 @@
+{
+  "domain": "adaptive_audio",
+  "name": "Adaptive Audio",
+  "codeowners": [
+    "@LukasScarfe"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "frontend"
+  ],
+  "documentation": "https://github.com/LukasScarfe/adaptive-audio",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/LukasScarfe/adaptive-audio/issues",
+  "requirements": [],
+  "version": "0.6.0"
+}

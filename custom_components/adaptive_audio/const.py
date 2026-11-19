@@ -1,6 +1,6 @@
-"""Constants for Adaptive Volume. All option keys and defaults live here."""
+"""Constants for Adaptive Audio. All option keys and defaults live here."""
 
-DOMAIN = "adaptive_volume"
+DOMAIN = "adaptive_audio"
 
 CONF_NAME = "name"
 CONF_PLAYERS = "players"
@@ -77,7 +77,7 @@ DEFAULTS = {
 
 CURVE_SAMPLE_MINUTES = 10  # the sensor's 24 h `curve` attribute: one value per 10 min
 
-TESTER_URL = "https://lukasscarfe.github.io/ha-adaptive-volume/"  # the GitHub Pages tester (site/)
+TESTER_URL = "https://lukasscarfe.github.io/adaptive-audio/"  # the GitHub Pages tester (site/)
 
-URL_BASE = "/adaptive_volume_static"
-CARD_URL = f"{URL_BASE}/adaptive-volume-card.js"
+URL_BASE = "/adaptive_audio_static"
+CARD_URL = f"{URL_BASE}/adaptive-audio-card.js"

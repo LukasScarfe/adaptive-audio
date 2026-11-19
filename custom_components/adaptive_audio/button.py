@@ -6,14 +6,14 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity import AdaptiveVolumeEntity
+from .entity import AdaptiveAudioEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
     async_add_entities([ApplyButton(entry.runtime_data, "apply")])
 
 
-class ApplyButton(AdaptiveVolumeEntity, ButtonEntity):
+class ApplyButton(AdaptiveAudioEntity, ButtonEntity):
     _attr_icon = "mdi:volume-check"
 
     async def async_press(self) -> None:

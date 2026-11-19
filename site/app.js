@@ -1,5 +1,5 @@
 /*
- * Adaptive Volume tester. The curve is worked out by the integration's own schedule.py and
+ * Adaptive Audio tester. The curve is worked out by the integration's own schedule.py and
  * curve.py, run in the browser with Pyodide (the Pages build copies them into py/), so this
  * page always agrees with the integration. The settings live in the URL hash, so a link
  * (including the one on the integration's setup page) opens with them filled in.
@@ -369,12 +369,12 @@ function syncChrome() {
 document.getElementById("theme-toggle").onclick = () => {
   const next = isLight() ? "dark" : "light";
   ROOT.setAttribute("data-theme", next);
-  store("adaptive-volume-theme", next);
+  store("adaptive-audio-theme", next);
   syncChrome();
 };
 document.querySelectorAll("[data-style-btn]").forEach((b) => b.addEventListener("click", () => {
   if (b.dataset.styleBtn === "ha") ROOT.setAttribute("data-style", "ha"); else ROOT.removeAttribute("data-style");
-  store("adaptive-volume-style", b.dataset.styleBtn);
+  store("adaptive-audio-style", b.dataset.styleBtn);
   syncChrome();
   if (result && !result.error) draw(); // the chart's font size can change with the style
 }));

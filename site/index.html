@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0d1a0e">
-<title>Adaptive Volume Tester</title>
-<meta name="description" content="Try Adaptive Volume settings and see the volume your speakers would start at through the day.">
+<title>Adaptive Audio Tester</title>
+<meta name="description" content="Try Adaptive Audio settings and see the volume your speakers would start at through the day.">
 <link rel="icon" href="favicon-32x32.png">
 <script>
   // Dark is the default. Apply a saved style and theme before first paint.
   try {
     var q = new URLSearchParams(location.search);
     var t = q.get("theme"), s = q.get("style");
-    if (t === "light" || t === "dark") localStorage.setItem("adaptive-volume-theme", t);
-    if (s === "ha" || s === "lukas") localStorage.setItem("adaptive-volume-style", s);
-    if (localStorage.getItem("adaptive-volume-theme") === "light") document.documentElement.setAttribute("data-theme", "light");
-    if (localStorage.getItem("adaptive-volume-style") === "ha") document.documentElement.setAttribute("data-style", "ha");
+    if (t === "light" || t === "dark") localStorage.setItem("adaptive-audio-theme", t);
+    if (s === "ha" || s === "lukas") localStorage.setItem("adaptive-audio-style", s);
+    if (localStorage.getItem("adaptive-audio-theme") === "light") document.documentElement.setAttribute("data-theme", "light");
+    if (localStorage.getItem("adaptive-audio-style") === "ha") document.documentElement.setAttribute("data-style", "ha");
   } catch (e) {}
 </script>
 <link rel="stylesheet" href="style.css">
@@ -26,7 +26,7 @@
     <span class="me" aria-hidden="true">
       <img class="logo-dark" src="logo-dark.png" alt=""><img class="logo-light" src="logo-light.png" alt="">
     </span>
-    <h1>Adaptive Volume tester</h1>
+    <h1>Adaptive Audio tester</h1>
     <nav class="nav">
       <div class="tabs" role="group" aria-label="Style">
         <button data-style-btn="lukas" aria-pressed="true">Moss</button><button data-style-btn="ha" aria-pressed="false">Home Assistant</button>
@@ -37,9 +37,9 @@
 </div>
 
 <main class="wrap">
-  <p class="intro">Try settings for <a href="https://github.com/LukasScarfe/ha-adaptive-volume">Adaptive Volume</a>
+  <p class="intro">Try settings for <a href="https://github.com/LukasScarfe/adaptive-audio">Adaptive Audio</a>
   and see the volume your speakers would start at through the day. Nothing here changes your Home Assistant.
-  To use settings you like, enter them in Adaptive Volume's Configure page.</p>
+  To use settings you like, enter them in Adaptive Audio's Configure page.</p>
 
   <div class="layout">
     <div class="chart-col">

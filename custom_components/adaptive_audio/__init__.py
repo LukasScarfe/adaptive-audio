@@ -1,4 +1,4 @@
-"""Adaptive Volume: a time-of-day default volume for media players, like adaptive brightness."""
+"""Adaptive Audio: a time-of-day default volume for media players, like adaptive brightness."""
 
 from __future__ import annotations
 
@@ -13,13 +13,13 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import CARD_URL, DOMAIN, LIVE_OPTIONS, URL_BASE
-from .controller import AdaptiveVolumeController
+from .controller import AdaptiveAudioController
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.NUMBER, Platform.BUTTON]
 
-type AdaptiveVolumeConfigEntry = ConfigEntry[AdaptiveVolumeController]
+type AdaptiveAudioConfigEntry = ConfigEntry[AdaptiveAudioController]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -32,8 +32,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveVolumeConfigEntry) -> bool:
-    controller = AdaptiveVolumeController(hass, entry)
+async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveAudioConfigEntry) -> bool:
+    controller = AdaptiveAudioController(hass, entry)
     controller.loaded_options = dict(entry.options)
     entry.runtime_data = controller
     # Platforms first, so the switches restore enabled/quiet before players are watched.
@@ -44,7 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveVolumeConfigEntr
     return True
 
 
-async def _async_options_updated(hass: HomeAssistant, entry: AdaptiveVolumeConfigEntry) -> None:
+async def _async_options_updated(hass: HomeAssistant, entry: AdaptiveAudioConfigEntry) -> None:
     """Reload on a settings change, but not when only a number entity moved."""
     controller = entry.runtime_data
     old, new = controller.loaded_options, dict(entry.options)
@@ -56,5 +56,5 @@ async def _async_options_updated(hass: HomeAssistant, entry: AdaptiveVolumeConfi
     controller.notify()
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: AdaptiveVolumeConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: AdaptiveAudioConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

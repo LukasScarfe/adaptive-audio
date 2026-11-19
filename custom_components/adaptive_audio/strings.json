@@ -1,9 +1,9 @@
 {
-  "title": "Adaptive Volume",
+  "title": "Adaptive Audio",
   "config": {
     "step": {
       "user": {
-        "title": "Adaptive Volume",
+        "title": "Adaptive Audio",
         "description": "[Try these settings in your browser]({tester}) to see the day's volume as a chart. It opens with the settings saved here.\n\nSets the volume your speakers start at through the day. {sun}",
         "submit": "Create",
         "data": {
@@ -132,7 +132,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Adaptive Volume",
+        "title": "Adaptive Audio",
         "description": "[Try these settings in your browser]({tester}) to see the day's volume as a chart. It opens with the settings saved here.\n\nSets the volume your speakers start at through the day. {sun}",
         "submit": "Save",
         "sections": {
@@ -270,7 +270,7 @@
   "entity": {
     "switch": {
       "enabled": {
-        "name": "Adaptive volume"
+        "name": "Adaptive audio"
       },
       "quiet": {
         "name": "Quiet mode"

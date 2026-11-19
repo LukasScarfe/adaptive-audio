@@ -1,12 +1,12 @@
-# CLAUDE.md: ha-adaptive-volume developer guide
+# CLAUDE.md: adaptive-audio developer guide
 
 How this repo is built and tested. Keep it current (edit in place; git history is the
-changelog). Raccoon context lives in the memory `[[ha-adaptive-volume-project]]` and
-`~/claude/docs/ha-features.md` (Adaptive volume); link there rather than restating.
+changelog). Raccoon context lives in the memory `[[adaptive-audio-project]]` and
+`~/claude/docs/ha-features.md` (Adaptive audio); link there rather than restating.
 
 ## What this is
 
-A custom HA integration (domain `adaptive_volume`): a time-of-day default volume per speaker
+A custom HA integration (domain `adaptive_audio`): a time-of-day default volume per speaker
 group (Simple Adaptive-Lighting-style anchors or Custom points; sigmoid/linear/steps curves),
 applied when playback starts after an idle gap, optionally adapted while playing (hand changes
 take a speaker over), plus quiet volume and night cap. Bundled card. Behaviour rules are in the `controller.py` docstring; user-facing
@@ -15,14 +15,14 @@ summary in `README.md`.
 ## Layout
 
 ```
-custom_components/adaptive_volume/
+custom_components/adaptive_audio/
   schedule.py     PURE math (no HA import): sigmoid shape, anchors/transitions, custom points, windows
   curve.py        options dict -> volume-at-minute function + marks; shared by controller, sensor, card
   controller.py   per-entry state + event handling (player state changes, quiet entity, 1-min tick/adapt)
   __init__.py     setup; reloads on options change except LIVE_OPTIONS (the number entities)
   config_flow.py  setup and Configure share one page of collapsible sections; submit saves
                   (re-shown only for a missing name/speaker or a broken schedule)
-  frontend/adaptive-volume-card.js   the card, vanilla JS + SVG, registered in async_setup
+  frontend/adaptive-audio-card.js   the card, vanilla JS + SVG, registered in async_setup
   switch.py sensor.py number.py button.py entity.py   the per-instance entities (one service device)
   const.py        option keys + DEFAULTS
   strings.json + translations/en.json   generated: edit dev/gen_strings.py, run it
@@ -36,7 +36,7 @@ site/                    the online tester (GitHub Pages): index.html + app.js +
 
 ## Online tester
 
-https://lukasscarfe.github.io/ha-adaptive-volume/ draws the curve from the integration's own
+https://lukasscarfe.github.io/adaptive-audio/ draws the curve from the integration's own
 `curve.builder`, so keep `schedule.py`, `curve.py` and `const.py` free of HA imports. Settings ride in
 the URL hash (base64url JSON of the stored options, plus `rise`/`set`); `config_flow.tester_url`
 builds the link at the top of the setup page, with time entities and sun times resolved to today.

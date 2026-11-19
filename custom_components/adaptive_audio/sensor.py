@@ -17,14 +17,14 @@ from .const import (
     CONF_QUIET_VOLUME,
     CURVE_SAMPLE_MINUTES,
 )
-from .entity import AdaptiveVolumeEntity
+from .entity import AdaptiveAudioEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
     async_add_entities([TargetSensor(entry.runtime_data, "target")])
 
 
-class TargetSensor(AdaptiveVolumeEntity, SensorEntity):
+class TargetSensor(AdaptiveAudioEntity, SensorEntity):
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:volume-vibrate"

@@ -5,7 +5,7 @@ import pathlib
 import sys
 import unittest
 
-_path = pathlib.Path(__file__).parent.parent / "custom_components/adaptive_volume/schedule.py"
+_path = pathlib.Path(__file__).parent.parent / "custom_components/adaptive_audio/schedule.py"
 _spec = importlib.util.spec_from_file_location("schedule", _path)
 s = importlib.util.module_from_spec(_spec)
 sys.modules["schedule"] = s

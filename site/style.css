@@ -233,7 +233,7 @@ tbody tr:nth-child(odd) td { background: var(--surface); }
 
 /* ---------- page ---------- */
 [hidden] { display: none !important; }
-/* Adaptive Volume tester. Chart tokens for both styles and themes. */
+/* Adaptive Audio tester. Chart tokens for both styles and themes. */
 :root { --curve: var(--focus); --band: var(--blue); --cap: var(--red); --quiet: var(--muted); }
 
 .intro { max-width: 70ch; }

@@ -1,8 +1,8 @@
 /*
- * Adaptive Volume card. Dependency-free (no Lit, no build step): a custom element + inline SVG.
+ * Adaptive Audio card. Dependency-free (no Lit, no build step): a custom element + inline SVG.
  *
- *   type: custom:adaptive-volume-card
- *   entity: sensor.adaptive_volume_living_room_target_volume
+ *   type: custom:adaptive-audio-card
+ *   entity: sensor.adaptive_audio_living_room_scheduled_volume
  *   title: Living room          # optional
  *   show_history: true          # optional: today's actual speaker volumes as dots
  *
@@ -32,9 +32,9 @@ function haMinutes(date, tz) {
 }
 const hhmm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
 
-class AdaptiveVolumeCard extends HTMLElement {
+class AdaptiveAudioCard extends HTMLElement {
   setConfig(config) {
-    if (!config.entity) throw new Error("Set `entity` to an Adaptive Volume target-volume sensor");
+    if (!config.entity) throw new Error("Set `entity` to an Adaptive Audio scheduled volume sensor");
     this._config = { show_history: true, ...config };
     this._history = {};
     this._historyAt = 0;
@@ -119,14 +119,14 @@ class AdaptiveVolumeCard extends HTMLElement {
       this._key = null;
       if (this._hass) this.hass = this._hass;
     } catch (e) {
-      console.warn("adaptive-volume-card: history unavailable", e);
+      console.warn("adaptive-audio-card: history unavailable", e);
     }
   }
 
   _render(st) {
     const a = st.attributes;
     const root = this.shadowRoot;
-    const name = this._config.title || (a.friendly_name || "").replace(/ (Target|Scheduled) volume$/, "").replace(/^Adaptive Volume /, "");
+    const name = this._config.title || (a.friendly_name || "").replace(/ (Target|Scheduled) volume$/, "").replace(/^Adaptive Audio /, "");
     root.querySelector(".title").textContent = name;
     root.querySelector(".now").innerHTML =
       st.state === "unavailable" || st.state === "unknown" ? "" :
@@ -239,15 +239,15 @@ class AdaptiveVolumeCard extends HTMLElement {
   }
 
   static getStubConfig(hass) {
-    const e = Object.keys(hass.states).find((k) => k.startsWith("sensor.adaptive_volume_") && k.endsWith("_target_volume"));
+    const e = Object.keys(hass.states).find((k) => k.startsWith("sensor.adaptive_audio_") && (k.endsWith("_scheduled_volume") || k.endsWith("_target_volume")));
     return { entity: e || "" };
   }
 }
 
-customElements.define("adaptive-volume-card", AdaptiveVolumeCard);
+customElements.define("adaptive-audio-card", AdaptiveAudioCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "adaptive-volume-card",
-  name: "Adaptive Volume",
+  type: "adaptive-audio-card",
+  name: "Adaptive Audio",
   description: "The volume schedule through the day, with each speaker's actual volume.",
 });

@@ -1,4 +1,4 @@
-# Throwaway Home Assistant for developing Adaptive Volume. NOT a production stack: it lives
+# Throwaway Home Assistant for developing Adaptive Audio. NOT a production stack: it lives
 # in this repo, not in LukasScarfe/containers. The integration is bind-mounted from the
 # checkout, so a `docker compose restart` picks up edits. State under ./config is gitignored.
 # Up:   docker compose -f dev/docker-compose.yml up -d     (UI: http://raccoon:8126)
@@ -6,7 +6,7 @@
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: adaptive-volume-dev-ha
+    container_name: adaptive-audio-dev-ha
     restart: unless-stopped
     mem_limit: 2g
     ports:
@@ -15,4 +15,4 @@ services:
       - TZ=America/Vancouver
     volumes:
       - ./config:/config
-      - ../custom_components/adaptive_volume:/config/custom_components/adaptive_volume:ro
+      - ../custom_components/adaptive_audio:/config/custom_components/adaptive_audio:ro

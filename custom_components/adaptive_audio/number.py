@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_CAP_VOLUME, CONF_QUIET_VOLUME
-from .entity import AdaptiveVolumeEntity
+from .entity import AdaptiveAudioEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
@@ -19,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
     )
 
 
-class OptionNumber(AdaptiveVolumeEntity, NumberEntity):
+class OptionNumber(AdaptiveAudioEntity, NumberEntity):
     _attr_native_min_value = 0
     _attr_native_max_value = 100
     _attr_native_step = 1
