@@ -55,14 +55,14 @@ def render(
                 f'<line x1="{_x(a):.1f}" x2="{_x(b):.1f}" y1="{yc:.1f}" y2="{yc:.1f}" '
                 'stroke="#e5484d" stroke-width="1.5" stroke-dasharray="4 3"/>'
             )
-        out.append(f'<text x="{_x(spans[0][0]) + 4:.1f}" y="{yc - 4:.1f}" fill="#e5484d">cap {cap_volume:g}%</text>')
+        out.append(f'<text x="{_x(spans[0][0]) + 4:.1f}" y="{yc - 4:.1f}" fill="#e5484d">night cap {cap_volume:g}%</text>')
     if quiet_volume is not None:
         yq = _y(quiet_volume, top)
         out.append(
             f'<line x1="{L}" x2="{W - R}" y1="{yq:.1f}" y2="{yq:.1f}" stroke="#8e6fd8" '
             'stroke-width="1" stroke-dasharray="2 3"/>'
         )
-        out.append(f'<text x="{W - R - 4}" y="{yq - 4:.1f}" text-anchor="end" fill="#8e6fd8">quiet {quiet_volume:g}%</text>')
+        out.append(f'<text x="{W - R - 4}" y="{yq - 4:.1f}" text-anchor="end" fill="#8e6fd8">quiet mode {quiet_volume:g}%</text>')
     for m in marks or []:
         x = _x(m["at"])
         if m.get("ramp"):

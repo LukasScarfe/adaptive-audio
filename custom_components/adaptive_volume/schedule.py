@@ -94,7 +94,7 @@ class Anchor:
             return self.time % DAY
         base = sunrise if self.kind == "sunrise" else sunset
         if base is None:
-            raise ScheduleError(f"no {self.kind} time available")
+            raise ScheduleError(f"there is no {self.kind} time today")
         t = base + self.offset
         if self.earliest is not None:
             t = max(t, self.earliest)
@@ -147,7 +147,7 @@ def simple_target(
     align: str = ALIGN_CENTRE,
 ) -> float:
     if not trs:
-        raise ScheduleError("the schedule needs at least one anchor")
+        raise ScheduleError("the schedule needs at least one time")
     if len(trs) == 1:
         return trs[0].level
     now %= DAY
@@ -179,7 +179,7 @@ class Point:
             return self.minutes
         base = sunrise if self.anchor == "sunrise" else sunset
         if base is None:
-            raise ScheduleError(f"no {self.anchor} time available")
+            raise ScheduleError(f"there is no {self.anchor} time today")
         return (base + self.minutes) % DAY
 
 
@@ -192,20 +192,20 @@ def parse_points(text: str) -> list[Point]:
             continue
         m = _POINT_RE.match(line)
         if not m:
-            raise ScheduleError(f"line {n}: '{raw.strip()}' is not like '07:00 20' or 'sunset+30 25'")
+            raise ScheduleError(f"line {n} should look like 07:00 20 or sunset+30 25, not '{raw.strip()}'")
         vol = int(m["vol"])
         if vol > 100:
-            raise ScheduleError(f"line {n}: volume {vol} is over 100")
+            raise ScheduleError(f"line {n} has a volume over 100")
         if m["clock"]:
             h, mi = (int(x) for x in m["clock"].split(":"))
             if h > 23 or mi > 59:
-                raise ScheduleError(f"line {n}: {m['clock']} is not a time of day")
+                raise ScheduleError(f"line {n} has {m['clock']}, which isn't a time of day")
             points.append(Point("clock", h * 60 + mi, vol))
         else:
             off = int(m["off"].replace(" ", "")) if m["off"] else 0
             points.append(Point(m["sun"].lower(), off, vol))
     if not points:
-        raise ScheduleError("the schedule needs at least one point")
+        raise ScheduleError("add at least one time and volume")
     return points
 
 

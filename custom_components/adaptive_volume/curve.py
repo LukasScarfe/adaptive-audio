@@ -36,6 +36,9 @@ from .const import (
 )
 
 
+LABELS = {"wake": "morning", "evening": "evening", "bedtime": "bedtime"}  # chart labels
+
+
 def opt(options: dict[str, Any], key: str):
     return options.get(key, DEFAULTS.get(key))
 
@@ -120,9 +123,9 @@ def builder(
     named = anchors(options, entity_minute)
     trs = schedule.transitions([(a, v) for _, a, v in named], sunrise, sunset)
     if schedule.overlapping(trs, curve, align):
-        raise schedule.ScheduleError("the ramps overlap: shorten a ramp or move an anchor")
+        raise schedule.ScheduleError("two volume changes overlap. Make one shorter or move it")
     marks = [
-        {"name": n, "at": a.resolve(sunrise, sunset), "ramp": 0 if curve == "steps" else a.ramp}
+        {"name": LABELS[n], "at": a.resolve(sunrise, sunset), "ramp": 0 if curve == "steps" else a.ramp}
         for n, a, _ in named
     ]
     return (lambda m: schedule.simple_target(m, trs, curve, steep, align)), marks

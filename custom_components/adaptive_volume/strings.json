@@ -4,264 +4,264 @@
     "step": {
       "user": {
         "title": "Adaptive Volume",
-        "description": "{image}\n\nToday's curve. Blue shading = ramps, red = cap hours, dotted = quiet volume. {sun}",
+        "description": "{image}\n\nThe line shows the volume your speakers start at through the day. Light blue: the volume is changing. Red: night cap hours. Dotted: quiet volume. {sun}",
         "submit": "Create",
         "data": {
           "name": "Name"
         },
         "data_description": {
-          "name": "e.g. Living room"
+          "name": "For example: Living room"
         },
         "sections": {
           "speakers": {
-            "name": "Speakers and behaviour",
+            "name": "Speakers",
             "description": "",
             "data": {
               "players": "Speakers",
-              "skip_sources": "Skip sources",
-              "idle_gap": "Idle gap",
-              "autoreset": "Hand-change reset"
+              "skip_sources": "Leave these inputs alone",
+              "idle_gap": "Reset after being stopped for",
+              "autoreset": "Follow the schedule again after"
             },
             "data_description": {
-              "players": "Media players this instance looks after.",
-              "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
-              "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume.",
-              "autoreset": "With Adapt while playing on, a hand change stops adapting that speaker. 0 = until its next fresh start; otherwise resume after this many minutes."
+              "players": "The speakers this controls.",
+              "skip_sources": "If a speaker is playing one of these inputs, its volume is never changed. Separate them with commas, for example: Line In",
+              "idle_gap": "Once a speaker has been stopped this long, it starts at the scheduled volume the next time it plays. Shorter pauses keep your volume.",
+              "autoreset": "Only matters when Adjust while playing is on. If you change a speaker's volume yourself, it stops following the schedule. 0 waits until it next starts playing."
             }
           },
           "schedule": {
             "name": "Schedule",
             "description": "",
             "data": {
-              "schedule_type": "Schedule type",
-              "curve": "Curve",
-              "day_volume": "Day volume",
-              "use_evening": "Use an evening level",
+              "schedule_type": "Type",
+              "curve": "How the volume changes",
+              "day_volume": "Daytime volume",
+              "use_evening": "Use a separate evening volume",
               "evening_volume": "Evening volume",
               "night_volume": "Night volume",
-              "points": "Points (Custom only)"
+              "points": "My own times"
             },
             "data_description": {
-              "schedule_type": "Simple: Day, Evening and Night levels at Wake, Evening and Bedtime (below), like Adaptive Lighting. Custom: your own list of points.",
-              "curve": "Sigmoid: an S-curve that eases in and out. Linear: a straight ramp. Steps: an instant change.",
-              "day_volume": "Simple: from Wake.",
-              "use_evening": "Off = two levels (Day and Night), like Adaptive Lighting.",
-              "evening_volume": "Simple: from Evening, if used.",
-              "night_volume": "Simple: from Bedtime.",
-              "points": "One per line: a time and a volume. A time is a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15"
+              "schedule_type": "Morning, evening and night: set three volumes, and when each one starts below. My own times: type a list of times and volumes.",
+              "curve": "Smoothly eases in and out. Steadily changes at an even rate. All at once jumps at the set time.",
+              "day_volume": "Starts at Morning.",
+              "use_evening": "Turn off to use only the daytime and night volumes.",
+              "evening_volume": "Starts at Evening.",
+              "night_volume": "Starts at Bedtime.",
+              "points": "Only used with My own times. One per line: a time, then a volume. You can use sunrise or sunset, plus or minus minutes. For example:\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15"
             }
           },
           "wake": {
-            "name": "Wake",
-            "description": "Simple schedule: Night → Day.",
+            "name": "Morning",
+            "description": "When the daytime volume starts.",
             "data": {
-              "entity": "Anchored to",
+              "entity": "Use a time from",
               "time": "Time",
-              "ramp": "Ramp length"
+              "ramp": "Change over"
             },
             "data_description": {
-              "entity": "Optional: follow a time entity instead, e.g. a time helper or Sun next rising / setting. The time below is used when this is empty or has no time.",
-              "time": "The clock time, when not anchored to an entity.",
-              "ramp": "How long the change takes, centred on the time. 0 = instant."
+              "entity": "Optional. Pick a time helper or a sun sensor, like Sun next rising. Leave it empty to use the time below.",
+              "time": "Used when nothing is picked above.",
+              "ramp": "How long the change takes, centred on the time. 0 changes it straight away."
             }
           },
           "evening": {
             "name": "Evening",
-            "description": "Simple schedule: Day → Evening (if used).",
+            "description": "When the evening volume starts.",
             "data": {
-              "entity": "Anchored to",
+              "entity": "Use a time from",
               "time": "Time",
-              "ramp": "Ramp length"
+              "ramp": "Change over"
             },
             "data_description": {
-              "entity": "Optional: follow a time entity instead, e.g. a time helper or Sun next rising / setting. The time below is used when this is empty or has no time.",
-              "time": "The clock time, when not anchored to an entity.",
-              "ramp": "How long the change takes, centred on the time. 0 = instant."
+              "entity": "Optional. Pick a time helper or a sun sensor, like Sun next rising. Leave it empty to use the time below.",
+              "time": "Used when nothing is picked above.",
+              "ramp": "How long the change takes, centred on the time. 0 changes it straight away."
             }
           },
           "bedtime": {
             "name": "Bedtime",
-            "description": "Simple schedule: Evening (or Day) → Night.",
+            "description": "When the night volume starts.",
             "data": {
-              "entity": "Anchored to",
+              "entity": "Use a time from",
               "time": "Time",
-              "ramp": "Ramp length"
+              "ramp": "Change over"
             },
             "data_description": {
-              "entity": "Optional: follow a time entity instead, e.g. a time helper or Sun next rising / setting. The time below is used when this is empty or has no time.",
-              "time": "The clock time, when not anchored to an entity.",
-              "ramp": "How long the change takes, centred on the time. 0 = instant."
+              "entity": "Optional. Pick a time helper or a sun sensor, like Sun next rising. Leave it empty to use the time below.",
+              "time": "Used when nothing is picked above.",
+              "ramp": "How long the change takes, centred on the time. 0 changes it straight away."
             }
           },
           "quiet_cap": {
-            "name": "Quiet and night cap",
+            "name": "Quiet mode and night cap",
             "description": "",
             "data": {
               "quiet_volume": "Quiet volume",
-              "quiet_entity": "Quiet when this entity…",
-              "quiet_state": "…is in this state",
+              "quiet_entity": "Also turn on quiet mode with",
+              "quiet_state": "When it is",
               "cap_enabled": "Night cap",
-              "cap_entity": "Night cap also on while this is on",
-              "cap_volume": "Cap volume",
-              "cap_start": "Cap starts",
-              "cap_start_entity": "Cap starts at this entity's time",
-              "cap_end": "Cap ends",
-              "cap_end_entity": "Cap ends at this entity's time"
+              "cap_entity": "Also turn on the night cap with",
+              "cap_volume": "Night cap volume",
+              "cap_start": "Night cap starts",
+              "cap_start_entity": "Or start at a time from",
+              "cap_end": "Night cap ends",
+              "cap_end_entity": "Or end at a time from"
             },
             "data_description": {
-              "quiet_volume": "Volume while quiet is on (the Quiet switch, or the linked entity). Also the maximum while quiet.",
-              "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below.",
-              "quiet_state": "The state that means quiet (default on).",
-              "cap_enabled": "The same as the Night cap switch. During cap hours, turning a speaker above the cap volume pulls it straight back.",
-              "cap_entity": "Optional: a boolean (e.g. an input_boolean) that turns the night cap on while it is on, even with the switch off.",
-              "cap_volume": "The maximum during cap hours. Fresh starts never go above it either.",
-              "cap_start_entity": "Optional: a time helper or sensor; the time above is used when this is empty.",
-              "cap_end_entity": "Optional: a time helper or sensor; the time above is used when this is empty."
+              "quiet_volume": "The volume while quiet mode is on. Speakers can't go above it.",
+              "quiet_entity": "Optional. Quiet mode is also on while this is in the state below.",
+              "quiet_state": "Usually on.",
+              "cap_enabled": "Sets a maximum volume during the hours below. This is the same as the Night cap switch.",
+              "cap_entity": "Optional. The night cap is also on while this is on.",
+              "cap_volume": "Speakers can't go above this during night cap hours.",
+              "cap_start_entity": "Optional. Pick a time helper or a sun sensor. Leave it empty to use the time above.",
+              "cap_end_entity": "Optional. Pick a time helper or a sun sensor. Leave it empty to use the time above."
             }
           }
         }
       }
     },
     "error": {
-      "bad_schedule": "This schedule can't be used: {error}",
-      "need_speakers": "Give this instance a name and pick at least one speaker.",
-      "redrawn": "The curve above is redrawn with your changes. Press Create again to keep them."
+      "bad_schedule": "This schedule doesn't work: {error}",
+      "need_speakers": "Add a name and at least one speaker.",
+      "redrawn": "The chart now shows your changes. Press Create again to keep them."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Adaptive Volume",
-        "description": "{image}\n\nToday's curve. Blue shading = ramps, red = cap hours, dotted = quiet volume. {sun}",
+        "description": "{image}\n\nThe line shows the volume your speakers start at through the day. Light blue: the volume is changing. Red: night cap hours. Dotted: quiet volume. {sun}",
         "submit": "Save",
         "sections": {
           "speakers": {
-            "name": "Speakers and behaviour",
+            "name": "Speakers",
             "description": "",
             "data": {
               "players": "Speakers",
-              "skip_sources": "Skip sources",
-              "idle_gap": "Idle gap",
-              "autoreset": "Hand-change reset"
+              "skip_sources": "Leave these inputs alone",
+              "idle_gap": "Reset after being stopped for",
+              "autoreset": "Follow the schedule again after"
             },
             "data_description": {
-              "players": "Media players this instance looks after.",
-              "skip_sources": "Comma-separated sources where Adaptive Volume never touches the volume, e.g. Line In.",
-              "idle_gap": "Minutes a speaker must be not playing before its next play counts as a fresh start and gets the schedule's volume.",
-              "autoreset": "With Adapt while playing on, a hand change stops adapting that speaker. 0 = until its next fresh start; otherwise resume after this many minutes."
+              "players": "The speakers this controls.",
+              "skip_sources": "If a speaker is playing one of these inputs, its volume is never changed. Separate them with commas, for example: Line In",
+              "idle_gap": "Once a speaker has been stopped this long, it starts at the scheduled volume the next time it plays. Shorter pauses keep your volume.",
+              "autoreset": "Only matters when Adjust while playing is on. If you change a speaker's volume yourself, it stops following the schedule. 0 waits until it next starts playing."
             }
           },
           "schedule": {
             "name": "Schedule",
             "description": "",
             "data": {
-              "schedule_type": "Schedule type",
-              "curve": "Curve",
-              "day_volume": "Day volume",
-              "use_evening": "Use an evening level",
+              "schedule_type": "Type",
+              "curve": "How the volume changes",
+              "day_volume": "Daytime volume",
+              "use_evening": "Use a separate evening volume",
               "evening_volume": "Evening volume",
               "night_volume": "Night volume",
-              "points": "Points (Custom only)"
+              "points": "My own times"
             },
             "data_description": {
-              "schedule_type": "Simple: Day, Evening and Night levels at Wake, Evening and Bedtime (below), like Adaptive Lighting. Custom: your own list of points.",
-              "curve": "Sigmoid: an S-curve that eases in and out. Linear: a straight ramp. Steps: an instant change.",
-              "day_volume": "Simple: from Wake.",
-              "use_evening": "Off = two levels (Day and Night), like Adaptive Lighting.",
-              "evening_volume": "Simple: from Evening, if used.",
-              "night_volume": "Simple: from Bedtime.",
-              "points": "One per line: a time and a volume. A time is a clock time or sunrise/sunset with an offset in minutes, e.g.\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15"
+              "schedule_type": "Morning, evening and night: set three volumes, and when each one starts below. My own times: type a list of times and volumes.",
+              "curve": "Smoothly eases in and out. Steadily changes at an even rate. All at once jumps at the set time.",
+              "day_volume": "Starts at Morning.",
+              "use_evening": "Turn off to use only the daytime and night volumes.",
+              "evening_volume": "Starts at Evening.",
+              "night_volume": "Starts at Bedtime.",
+              "points": "Only used with My own times. One per line: a time, then a volume. You can use sunrise or sunset, plus or minus minutes. For example:\n07:00 20\nsunrise+30 25\nsunset-45 30\n22:00 15"
             }
           },
           "wake": {
-            "name": "Wake",
-            "description": "Simple schedule: Night → Day.",
+            "name": "Morning",
+            "description": "When the daytime volume starts.",
             "data": {
-              "entity": "Anchored to",
+              "entity": "Use a time from",
               "time": "Time",
-              "ramp": "Ramp length"
+              "ramp": "Change over"
             },
             "data_description": {
-              "entity": "Optional: follow a time entity instead, e.g. a time helper or Sun next rising / setting. The time below is used when this is empty or has no time.",
-              "time": "The clock time, when not anchored to an entity.",
-              "ramp": "How long the change takes, centred on the time. 0 = instant."
+              "entity": "Optional. Pick a time helper or a sun sensor, like Sun next rising. Leave it empty to use the time below.",
+              "time": "Used when nothing is picked above.",
+              "ramp": "How long the change takes, centred on the time. 0 changes it straight away."
             }
           },
           "evening": {
             "name": "Evening",
-            "description": "Simple schedule: Day → Evening (if used).",
+            "description": "When the evening volume starts.",
             "data": {
-              "entity": "Anchored to",
+              "entity": "Use a time from",
               "time": "Time",
-              "ramp": "Ramp length"
+              "ramp": "Change over"
             },
             "data_description": {
-              "entity": "Optional: follow a time entity instead, e.g. a time helper or Sun next rising / setting. The time below is used when this is empty or has no time.",
-              "time": "The clock time, when not anchored to an entity.",
-              "ramp": "How long the change takes, centred on the time. 0 = instant."
+              "entity": "Optional. Pick a time helper or a sun sensor, like Sun next rising. Leave it empty to use the time below.",
+              "time": "Used when nothing is picked above.",
+              "ramp": "How long the change takes, centred on the time. 0 changes it straight away."
             }
           },
           "bedtime": {
             "name": "Bedtime",
-            "description": "Simple schedule: Evening (or Day) → Night.",
+            "description": "When the night volume starts.",
             "data": {
-              "entity": "Anchored to",
+              "entity": "Use a time from",
               "time": "Time",
-              "ramp": "Ramp length"
+              "ramp": "Change over"
             },
             "data_description": {
-              "entity": "Optional: follow a time entity instead, e.g. a time helper or Sun next rising / setting. The time below is used when this is empty or has no time.",
-              "time": "The clock time, when not anchored to an entity.",
-              "ramp": "How long the change takes, centred on the time. 0 = instant."
+              "entity": "Optional. Pick a time helper or a sun sensor, like Sun next rising. Leave it empty to use the time below.",
+              "time": "Used when nothing is picked above.",
+              "ramp": "How long the change takes, centred on the time. 0 changes it straight away."
             }
           },
           "quiet_cap": {
-            "name": "Quiet and night cap",
+            "name": "Quiet mode and night cap",
             "description": "",
             "data": {
               "quiet_volume": "Quiet volume",
-              "quiet_entity": "Quiet when this entity…",
-              "quiet_state": "…is in this state",
+              "quiet_entity": "Also turn on quiet mode with",
+              "quiet_state": "When it is",
               "cap_enabled": "Night cap",
-              "cap_entity": "Night cap also on while this is on",
-              "cap_volume": "Cap volume",
-              "cap_start": "Cap starts",
-              "cap_start_entity": "Cap starts at this entity's time",
-              "cap_end": "Cap ends",
-              "cap_end_entity": "Cap ends at this entity's time"
+              "cap_entity": "Also turn on the night cap with",
+              "cap_volume": "Night cap volume",
+              "cap_start": "Night cap starts",
+              "cap_start_entity": "Or start at a time from",
+              "cap_end": "Night cap ends",
+              "cap_end_entity": "Or end at a time from"
             },
             "data_description": {
-              "quiet_volume": "Volume while quiet is on (the Quiet switch, or the linked entity). Also the maximum while quiet.",
-              "quiet_entity": "Optional: quiet turns on by itself while this entity is in the state below.",
-              "quiet_state": "The state that means quiet (default on).",
-              "cap_enabled": "The same as the Night cap switch. During cap hours, turning a speaker above the cap volume pulls it straight back.",
-              "cap_entity": "Optional: a boolean (e.g. an input_boolean) that turns the night cap on while it is on, even with the switch off.",
-              "cap_volume": "The maximum during cap hours. Fresh starts never go above it either.",
-              "cap_start_entity": "Optional: a time helper or sensor; the time above is used when this is empty.",
-              "cap_end_entity": "Optional: a time helper or sensor; the time above is used when this is empty."
+              "quiet_volume": "The volume while quiet mode is on. Speakers can't go above it.",
+              "quiet_entity": "Optional. Quiet mode is also on while this is in the state below.",
+              "quiet_state": "Usually on.",
+              "cap_enabled": "Sets a maximum volume during the hours below. This is the same as the Night cap switch.",
+              "cap_entity": "Optional. The night cap is also on while this is on.",
+              "cap_volume": "Speakers can't go above this during night cap hours.",
+              "cap_start_entity": "Optional. Pick a time helper or a sun sensor. Leave it empty to use the time above.",
+              "cap_end_entity": "Optional. Pick a time helper or a sun sensor. Leave it empty to use the time above."
             }
           }
         }
       }
     },
     "error": {
-      "bad_schedule": "This schedule can't be used: {error}",
-      "need_speakers": "Give this instance a name and pick at least one speaker.",
-      "redrawn": "The curve above is redrawn with your changes. Press Save again to keep them."
+      "bad_schedule": "This schedule doesn't work: {error}",
+      "need_speakers": "Add a name and at least one speaker.",
+      "redrawn": "The chart now shows your changes. Press Save again to keep them."
     }
   },
   "selector": {
     "schedule_type": {
       "options": {
-        "simple": "Simple (Wake / Evening / Bedtime)",
-        "custom": "Custom points"
+        "simple": "Morning, evening and night",
+        "custom": "My own times"
       }
     },
     "curve": {
       "options": {
-        "sigmoid": "Sigmoid (S-curve)",
-        "linear": "Linear",
-        "steps": "Steps"
+        "sigmoid": "Smoothly",
+        "linear": "Steadily",
+        "steps": "All at once"
       }
     }
   },
@@ -271,10 +271,10 @@
         "name": "Adaptive volume"
       },
       "quiet": {
-        "name": "Quiet"
+        "name": "Quiet mode"
       },
       "adapt": {
-        "name": "Adapt while playing"
+        "name": "Adjust while playing"
       },
       "night_cap": {
         "name": "Night cap"
@@ -282,7 +282,7 @@
     },
     "sensor": {
       "target": {
-        "name": "Target volume"
+        "name": "Scheduled volume"
       }
     },
     "number": {
@@ -290,12 +290,12 @@
         "name": "Quiet volume"
       },
       "cap_volume": {
-        "name": "Cap volume"
+        "name": "Night cap volume"
       }
     },
     "button": {
       "apply": {
-        "name": "Apply volume now"
+        "name": "Set volume now"
       }
     }
   }

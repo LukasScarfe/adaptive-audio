@@ -126,18 +126,18 @@ class AdaptiveVolumeCard extends HTMLElement {
   _render(st) {
     const a = st.attributes;
     const root = this.shadowRoot;
-    const name = this._config.title || (a.friendly_name || "").replace(/ Target volume$/, "").replace(/^Adaptive Volume /, "");
+    const name = this._config.title || (a.friendly_name || "").replace(/ (Target|Scheduled) volume$/, "").replace(/^Adaptive Volume /, "");
     root.querySelector(".title").textContent = name;
     root.querySelector(".now").innerHTML =
       st.state === "unavailable" || st.state === "unknown" ? "" :
-      `now <b>${st.state}%</b>${a.start_volume != null && String(a.start_volume) !== st.state ? ` · starts at ${a.start_volume}%` : ""}`;
+      `Now <b>${st.state}%</b>${a.start_volume != null && String(a.start_volume) !== st.state ? ` · speakers start at ${a.start_volume}%` : ""}`;
     const chips = [
       [a.enabled ? "On" : "Off", a.enabled ? "on" : ""],
-      [{ sigmoid: "Sigmoid", linear: "Linear", steps: "Steps" }[a.curve_type] || a.curve_type, ""],
-      a.adapt ? ["Adapting while playing", "on"] : null,
-      a.quiet_active ? [`Quiet ${a.quiet_volume}%`, "on"] : null,
-      a.cap_active && !a.quiet_active ? [`Capped ${a.cap}%`, "on"] : null,
-      (a.taken_over || []).length ? [`Hand-set: ${a.taken_over.map((p) => this._name(p)).join(", ")}`, ""] : null,
+      [{ sigmoid: "Smooth", linear: "Steady", steps: "All at once" }[a.curve_type] || a.curve_type, ""],
+      a.adapt ? ["Adjusting while playing", "on"] : null,
+      a.quiet_active ? [`Quiet mode ${a.quiet_volume}%`, "on"] : null,
+      a.cap_active && !a.quiet_active ? [`Night cap ${a.cap}%`, "on"] : null,
+      (a.taken_over || []).length ? [`Set by hand: ${a.taken_over.map((p) => this._name(p)).join(", ")}`, ""] : null,
       a.schedule_error ? [a.schedule_error, "warn"] : null,
     ].filter(Boolean);
     root.querySelector(".chips").innerHTML = chips.map(([t, c]) => `<span class="chip ${c}">${t}</span>`).join("");

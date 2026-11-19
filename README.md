@@ -1,69 +1,72 @@
 # Adaptive Volume for Home Assistant
 
-Adaptive brightness, but for speakers. Each speaker gets a sensible default volume for the time
-of day, applied **when playback starts**. Turn it up or down while it plays and your choice
-stands until the next fresh start.
+Your speakers start at a volume that suits the time of day: louder in the afternoon, quieter at
+night. If you turn a speaker up or down while it plays, it stays where you put it.
 
-## What it does
+## How it works
 
-- **Simple schedule (like Adaptive Lighting):** Day, Evening (optional) and Night levels, changed
-  at Wake, Evening and Bedtime. Each is a clock time, or follows a time entity (a time helper, or
-  a sensor like *Sun next rising*), and has a ramp length centred on that time.
-- **Custom schedule:** your own points, one per line, e.g. `07:00 20`, `sunrise+30 25`,
-  `sunset-45 30`. Each transition spans the gap to the next point.
-- **Curves:** Sigmoid (an S-curve that eases in and out), Linear, or Steps.
-- **Setup and Configure** share one menu: Speakers and behaviour, Schedule, Quiet and night cap,
-  then Create / Save. The Schedule menu shows today's curve at the top and redraws it after each
-  change. Each form's button is *Back*; nothing is saved until Create / Save (the dialog's X
-  discards the changes).
-- **Fresh starts:** a speaker gets the schedule's volume when it starts playing after the
-  **idle gap** (default 10 min) of not playing. Shorter pauses keep your volume.
-- **Adapt while playing (switch):** playing speakers glide along the curve (at most 1 % a
-  minute; the curve itself moves slower than that). If you change a speaker's volume by hand, it stops adapting until its next fresh
-  start, or for *Hand-change reset* minutes if you set that.
-- **Quiet:** a Quiet switch per instance, and optionally a linked entity (a night-mode switch, an
-  `input_select` in a given state...). While quiet, fresh starts use the quiet volume, it is also
-  the maximum, and turning quiet on pulls playing speakers down to it.
-- **Night cap (optional):** during cap hours, turning a speaker above the cap volume pulls it
-  straight back. Fresh starts never go above it either. It is on while its Night cap switch is
-  on, or while a linked boolean entity is on. Cap hours are clock times or time entities.
-- **Skip sources:** sources where it never touches the volume, e.g. `Line In` for a turntable.
+- **A volume for each part of the day.** Set a daytime, evening and night volume, and the time
+  each one starts. A time can be a clock time, or come from a time helper or a sun sensor (for
+  example, Sun next rising). Or type your own list of times and volumes instead.
+- **Smooth changes.** The volume can ease from one level to the next over a set number of
+  minutes, change at an even rate, or change all at once.
+- **Set when playback starts.** When a speaker starts playing after being stopped for a while
+  (10 minutes by default), it starts at the scheduled volume. Shorter pauses keep your volume.
+- **Adjust while playing (optional).** Turn on this switch and playing speakers follow the
+  schedule slowly, at most 1% a minute. If you change a speaker's volume yourself, it stops
+  following the schedule until it next starts playing, or after a number of minutes you choose.
+- **Quiet mode.** A switch, and optionally another entity such as a night-mode switch, that sets
+  speakers to a quiet volume and keeps them from going above it.
+- **Night cap (optional).** A maximum volume during set hours. If someone turns a speaker up past
+  it, it goes straight back down. It is on while its switch is on, or while another entity you
+  pick is on. The start and end can be clock times or come from a time helper.
+- **Leave some inputs alone.** For example, a speaker playing from Line In (a record player) is
+  never changed.
+
+## Setting it up
+
+*Settings → Devices & services → Add integration → Adaptive Volume.* Everything is on one page,
+with a chart of the day's volume at the top. When you change the schedule and press Create, the
+chart redraws so you can check it. Press Create again to keep it. Change anything later with
+**Configure**, which shows the same page.
+
+Add one for each speaker or group of speakers that should share a schedule.
 
 ## Card
 
-The integration registers its own card, so no Lovelace resource is needed:
+The card comes with the integration, so you don't need to add a resource:
 
 ```yaml
 type: custom:adaptive-volume-card
-entity: sensor.adaptive_volume_living_room_target_volume
+entity: sensor.adaptive_volume_living_room_scheduled_volume
 title: Living room      # optional
-show_history: true      # optional: today's actual speaker volumes as dots
+show_history: true      # optional: shows each speaker's real volume today as dots
 ```
 
-It plots the 24 h curve, a now marker, ramps, cap hours and the quiet level, plus each speaker's
-volume today. Times are in Home Assistant's time zone.
+It shows the day's schedule, the time now, night cap hours, the quiet volume, and each
+speaker's volume. Times use Home Assistant's time zone.
 
-## Entities (per instance)
+## Entities
 
-| Entity | What it is |
+Each one you add creates:
+
+| Entity | What it does |
 |---|---|
-| `switch.…_adaptive_volume` | Turns the instance on or off |
-| `switch.…_quiet` | Your quiet switch (attribute `quiet_active` includes the linked entity) |
-| `switch.…_night_cap` | The night cap on/off (the same setting as in Configure; attribute `cap_on` includes the linked entity) |
-| `switch.…_adapt_while_playing` | Glide playing speakers along the curve (attribute `taken_over`) |
-| `sensor.…_target_volume` | The schedule's volume now; attributes: `start_volume`, `cap`, `curve` (24 h, 10-min steps), `last_applied`... |
-| `number.…_quiet_volume`, `number.…_cap_volume` | Change live, no reload |
-| `button.…_apply_volume_now` | Give every speaker its start volume now |
+| `switch.…_adaptive_volume` | Turns it on or off |
+| `switch.…_quiet_mode` | Quiet mode |
+| `switch.…_night_cap` | The night cap |
+| `switch.…_adjust_while_playing` | Playing speakers follow the schedule |
+| `sensor.…_scheduled_volume` | The scheduled volume right now |
+| `number.…_quiet_volume`, `number.…_night_cap_volume` | Change these volumes straight away |
+| `button.…_set_volume_now` | Sets every speaker to the scheduled volume now |
 
 ## Install
 
-Add this repository as a custom repository (type *Integration*) in HACS / the Marketplace,
-install **Adaptive Volume**, restart Home Assistant, then *Settings → Devices & services → Add
-integration → Adaptive Volume*. Make one instance per speaker or speaker group. Everything is
-editable later under **Configure**.
+In HACS (the Marketplace), add this repository as a custom repository with the type
+*Integration*. Install **Adaptive Volume**, then restart Home Assistant.
 
-## Notes
+## Good to know
 
-- Volume is set with `media_player.volume_set`, so the player must support it.
-- Some apps (e.g. a Spotify client) push their own volume when they start; whichever arrives
-  last wins.
+- A speaker has to support setting its volume from Home Assistant.
+- Some apps, such as Spotify, set their own volume when they start playing. Whichever change
+  arrives last wins.
