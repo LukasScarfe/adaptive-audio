@@ -12,13 +12,25 @@ entry=[e for e in req("GET","/api/config/config_entries/entry") if e["domain"]==
 SPEAKERS={"players":[P,"media_player.walkman"],"idle_gap":0,"skip_sources":"Line In","autoreset":0}
 QUIET_CAP={"quiet_volume":10,"quiet_entity":"input_boolean.night_mode","quiet_state":"on",
            "cap_enabled":False,"cap_start":"22:00:00","cap_end":"07:00:00","cap_volume":25}
+def _values(fields):
+    """The page's current values, from its suggested values (sections nested)."""
+    out={}
+    for f in fields:
+        if f.get("type")=="expandable": out[f["name"]]=_values(f["schema"])
+        elif "suggested_value" in (f.get("description") or {}): out[f["name"]]=f["description"]["suggested_value"]
+    return out
 def options(**kw):
-    """Configure through the menu: Speakers and behaviour, Quiet and night cap, Save."""
-    f=req("POST","/api/config/config_entries/options/flow",{"handler":entry}); fid=f["flow_id"]
-    for step, base in (("speakers",SPEAKERS),("quiet_cap",QUIET_CAP)):
-        req("POST",f"/api/config/config_entries/options/flow/{fid}",{"next_step_id":step})
-        req("POST",f"/api/config/config_entries/options/flow/{fid}",{k:kw.get(k,v) for k,v in base.items()})
-    r=req("POST",f"/api/config/config_entries/options/flow/{fid}",{"next_step_id":"save"}); time.sleep(2); return r["type"]
+    """Configure is one page: fill it from its current values plus SPEAKERS/QUIET_CAP/kw, submit
+    (again if it redraws the curve)."""
+    U="/api/config/config_entries/options/flow"
+    f=req("POST",U,{"handler":entry}); fid=f["flow_id"]
+    for _ in range(3):
+        v=_values(f["data_schema"])
+        for sec, base in (("speakers",SPEAKERS),("quiet_cap",QUIET_CAP)):
+            v[sec]={**v.get(sec,{}),**{k:kw.get(k,x) for k,x in base.items()}}
+        f=req("POST",f"{U}/{fid}",v)
+        if f["type"]!="form": break
+    time.sleep(2); return f["type"]
 def check(name, got, want):
     ok = abs((got or -1)-want)<0.011; print(("PASS" if ok else "FAIL"), name, "got", got, "want", want)
 tgt=int(st("sensor.adaptive_volume_living_room_target_volume")["state"])/100
