@@ -1,22 +1,22 @@
-"""Pure schedule math for Adaptive Audio. No Home Assistant imports, so it unit-tests alone.
+"""Pure schedule math for Adaptive Audio. No Home Assistant imports, so it unit-tests alone
+(and runs in the online tester).
 
 Times are minutes after local midnight (0-1439) and the day is a circle. Two schedule types:
 
-Simple (Adaptive Lighting style): anchors Wake, Evening (optional) and Bedtime. Each anchor is a
-fixed time or sunrise/sunset plus an offset, optionally clamped between an earliest and latest
-time, and has a ramp length. After Wake the level is Day, after Evening it is Evening, after
-Bedtime it is Night. The change happens over the ramp, centred on the anchor or ending at it.
+Simple (Adaptive Lighting style): Wake, Evening (optional) and Bedtime, each a time of day with a
+ramp length. After Wake the level is Day, after Evening it is Evening, after Bedtime it is Night.
+Each change is spread over its ramp, centred on its time.
 
-Custom: a list of points, one per line, like the 0.1 schedule:
+Custom: a list of points, one per line:
 
     07:00 20          a clock time and a volume in percent
     sunrise+30 25     sunrise plus 30 minutes
     sunset-45 30
 
-Here each transition spans the whole gap between neighbouring points.
+Here each change spans the whole gap between neighbouring points.
 
 Curves: "steps" (instant change), "linear" (straight ramp) or "sigmoid" (an S-curve, like
-Adaptive Lighting's tanh). Steepness sets how sharp the middle of the S is.
+Adaptive Lighting's tanh).
 """
 
 from __future__ import annotations
@@ -29,8 +29,7 @@ DAY = 1440
 CURVE_STEPS = "steps"
 CURVE_LINEAR = "linear"
 CURVE_SIGMOID = "sigmoid"
-ALIGN_CENTRE = "centre"
-ALIGN_END = "end"
+_STEEPNESS = 6.0  # how sharp the middle of the sigmoid is
 
 _POINT_RE = re.compile(
     r"^\s*(?:(?P<clock>\d{1,2}:\d{2})|(?P<sun>sunrise|sunset)\s*(?P<off>[+-]\s*\d+)?)"
@@ -43,7 +42,7 @@ class ScheduleError(ValueError):
     """A schedule that can't be used."""
 
 
-def shape(frac: float, curve: str, steepness: float = 6.0) -> float:
+def shape(frac: float, curve: str) -> float:
     """Map ramp progress 0..1 to 0..1 for the curve. Sigmoid is a logistic rescaled to hit
     exactly 0 and 1 at the ends of the ramp."""
     frac = min(1.0, max(0.0, frac))
@@ -51,7 +50,7 @@ def shape(frac: float, curve: str, steepness: float = 6.0) -> float:
         return 1.0 if frac > 0 else 0.0
     if curve != CURVE_SIGMOID:
         return frac
-    k = max(0.5, float(steepness))
+    k = _STEEPNESS
     lo = 1 / (1 + math.exp(k / 2))
     hi = 1 / (1 + math.exp(-k / 2))
     return (1 / (1 + math.exp(-k * (frac - 0.5))) - lo) / (hi - lo)
@@ -77,90 +76,46 @@ def in_window(now: int, start: int, end: int) -> bool:
 
 
 @dataclass(frozen=True)
-class Anchor:
-    kind: str  # "fixed", "sunrise" or "sunset"
-    time: int  # fixed: minutes after midnight (ignored for sun anchors)
-    offset: int = 0  # minutes, added to sun anchors
-    earliest: int | None = None
-    latest: int | None = None
-    ramp: int = 60  # minutes
-
-    @property
-    def uses_sun(self) -> bool:
-        return self.kind in ("sunrise", "sunset")
-
-    def resolve(self, sunrise: int | None, sunset: int | None) -> int:
-        if self.kind == "fixed":
-            return self.time % DAY
-        base = sunrise if self.kind == "sunrise" else sunset
-        if base is None:
-            raise ScheduleError(f"there is no {self.kind} time today")
-        t = base + self.offset
-        if self.earliest is not None:
-            t = max(t, self.earliest)
-        if self.latest is not None:
-            t = min(t, self.latest)
-        return t % DAY
-
-
-@dataclass(frozen=True)
 class Transition:
-    """A change to `level` at `at`, spread over `ramp` minutes."""
+    """A change to `level` at `at`, spread over `ramp` minutes centred on `at`."""
 
     at: int
     ramp: int
     level: float
 
 
-def transitions(
-    anchors: list[tuple[Anchor, float]], sunrise: int | None, sunset: int | None
-) -> list[Transition]:
-    """Resolve (anchor, level after it) pairs into transitions sorted by time."""
-    out = [Transition(a.resolve(sunrise, sunset), max(0, int(a.ramp)), float(v)) for a, v in anchors]
-    return sorted(out, key=lambda t: t.at)
-
-
-def _window(t: Transition, curve: str, align: str) -> tuple[int, int]:
+def _window(t: Transition, curve: str) -> tuple[int, int]:
     """Start minute and length of a transition's ramp."""
     ramp = 0 if curve == CURVE_STEPS else t.ramp
-    start = t.at - (ramp if align == ALIGN_END else ramp / 2)
-    return int(round(start)) % DAY, ramp
+    return int(round(t.at - ramp / 2)) % DAY, ramp
 
 
-def overlapping(trs: list[Transition], curve: str, align: str) -> bool:
-    """True if any ramp runs into the next transition's ramp."""
+def overlapping(trs: list[Transition], curve: str) -> bool:
+    """True if any ramp runs into the next one. `trs` is sorted by time."""
     if len(trs) < 2:
         return False
-    wins = [_window(t, curve, align) for t in trs]
-    total = sum(r for _, r in wins)
-    if total >= DAY:
+    wins = [_window(t, curve) for t in trs]
+    if sum(r for _, r in wins) >= DAY:
         return True
-    for i, (start, ramp) in enumerate(wins):
-        nstart, _ = wins[(i + 1) % len(wins)]
-        if ramp > (nstart - start) % DAY and len(wins) > 1:
-            return True
-    return False
+    return any(
+        ramp > (wins[(i + 1) % len(wins)][0] - start) % DAY for i, (start, ramp) in enumerate(wins)
+    )
 
 
-def simple_target(
-    now: int, trs: list[Transition], curve: str = CURVE_SIGMOID, steepness: float = 6.0,
-    align: str = ALIGN_CENTRE,
-) -> float:
+def simple_target(now: int, trs: list[Transition], curve: str = CURVE_SIGMOID) -> float:
+    """The simple schedule's volume (percent, unrounded) at `now`. `trs` is sorted by time."""
     if not trs:
         raise ScheduleError("the schedule needs at least one time")
     if len(trs) == 1:
         return trs[0].level
     now %= DAY
-    wins = [_window(t, curve, align) for t in trs]
+    wins = [_window(t, curve) for t in trs]
     # The transition whose ramp started most recently (smallest distance back from now).
     i = min(range(len(trs)), key=lambda j: (now - wins[j][0]) % DAY)
     start, ramp = wins[i]
     prev = trs[i - 1].level
-    since = (now - start) % DAY
-    frac = 1.0 if ramp == 0 else since / ramp
-    if curve == CURVE_STEPS:
-        frac = 1.0
-    return prev + (trs[i].level - prev) * shape(frac, curve, steepness)
+    frac = 1.0 if ramp == 0 else ((now - start) % DAY) / ramp
+    return prev + (trs[i].level - prev) * shape(frac, curve)
 
 
 # ---- Custom points -------------------------------------------------------------------------
@@ -219,11 +174,8 @@ def target_volume(
     curve: str = CURVE_LINEAR,
     sunrise: int | None = None,
     sunset: int | None = None,
-    steepness: float = 6.0,
 ) -> float:
     """The custom schedule's volume (percent, unrounded) at `now`."""
-    if curve == "curve":  # 0.1 name for linear
-        curve = CURVE_LINEAR
     resolved = sorted((p.resolve(sunrise, sunset), p.volume) for p in points)
     if len(resolved) == 1:
         return float(resolved[0][1])
@@ -236,4 +188,4 @@ def target_volume(
     span = (t1 - t0) % DAY
     if span == 0:
         return float(v0)
-    return v0 + (v1 - v0) * shape(((now - t0) % DAY) / span, curve, steepness)
+    return v0 + (v1 - v0) * shape(((now - t0) % DAY) / span, curve)

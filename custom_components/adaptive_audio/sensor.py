@@ -9,12 +9,13 @@ from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import curve
 from .const import (
     CONF_CAP_ENABLED,
     CONF_CAP_ENTITY,
     CONF_CAP_VOLUME,
+    CONF_CURVE,
     CONF_QUIET_VOLUME,
+    CONF_SCHEDULE_TYPE,
     CURVE_SAMPLE_MINUTES,
 )
 from .entity import AdaptiveAudioEntity
@@ -39,14 +40,13 @@ class TargetSensor(AdaptiveAudioEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         c = self.controller
-        opts = c.entry.options
         cap_window = None
         if c.opt(CONF_CAP_ENABLED) or c.opt(CONF_CAP_ENTITY):
             cap_window = list(c.cap_window())
         return {
             "start_volume": c.start_volume,
-            "schedule_type": curve.schedule_type(opts),
-            "curve_type": curve.curve_name(opts),
+            "schedule_type": c.opt(CONF_SCHEDULE_TYPE),
+            "curve_type": c.opt(CONF_CURVE),
             "enabled": c.enabled,
             "adapt": c.adapt,
             "taken_over": sorted(c.manual),

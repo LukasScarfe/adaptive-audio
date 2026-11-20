@@ -12,22 +12,15 @@ CONF_MAX_RATE = "max_rate"  # % per minute at most while adjusting during playba
 # Schedule
 CONF_SCHEDULE_TYPE = "schedule_type"  # "simple" or "custom"
 CONF_CURVE = "curve"  # "steps", "linear" or "sigmoid"
-CONF_STEEPNESS = "steepness"  # no longer in the UI; fixed at the default
-CONF_ALIGN = "align"  # no longer in the UI; ramps are centred
 CONF_DAY_VOLUME = "day_volume"
 CONF_EVENING_VOLUME = "evening_volume"
 CONF_NIGHT_VOLUME = "night_volume"
 CONF_USE_EVENING = "use_evening"
 ANCHORS = ("wake", "evening", "bedtime")  # option keys, each a dict of the fields below
 A_ENTITY = "entity"  # optional time entity (time helper, sun sensor); overrides A_TIME
-A_KIND = "kind"  # 0.2 option: "fixed", "sunrise" or "sunset"
 A_TIME = "time"
-A_OFFSET = "offset"  # 0.2 options, still honoured for sun anchors
-A_EARLIEST = "earliest"
-A_LATEST = "latest"
-A_RAMP = "ramp"
+A_RAMP = "ramp"  # minutes, centred on the time
 CONF_POINTS = "points"  # custom schedule text
-CONF_MODE = "mode"  # 0.1 option: "curve"/"steps" with custom points
 
 # Quiet and cap
 CONF_QUIET_VOLUME = "quiet_volume"
@@ -45,9 +38,6 @@ CONF_CAP_VOLUME = "cap_volume"
 # Options the number and Night cap entities change live; changing only these doesn't reload.
 LIVE_OPTIONS = {CONF_QUIET_VOLUME, CONF_CAP_VOLUME, CONF_CAP_ENABLED}
 
-# Options the UI no longer offers; dropped when an entry is saved.
-RETIRED_OPTIONS = ("adapt_step", CONF_STEEPNESS, CONF_ALIGN, CONF_MODE)
-
 SCHEDULE_TYPES = ["simple", "custom"]
 CURVES = ["sigmoid", "linear", "steps"]
 
@@ -58,8 +48,6 @@ DEFAULTS = {
     CONF_MAX_RATE: 10,
     CONF_SCHEDULE_TYPE: "simple",
     CONF_CURVE: "sigmoid",
-    CONF_STEEPNESS: 6,
-    CONF_ALIGN: "centre",
     CONF_DAY_VOLUME: 40,
     CONF_EVENING_VOLUME: 30,
     CONF_NIGHT_VOLUME: 15,

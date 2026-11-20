@@ -52,11 +52,11 @@ from .const import (
     CURVES,
     DEFAULTS,
     DOMAIN,
-    RETIRED_OPTIONS,
     SCHEDULE_TYPES,
     TESTER_URL,
 )
 from .controller import entity_minute, sun_minutes
+
 
 def _num(lo, hi, unit=None, step=1, mode="box"):
     cfg = {"min": lo, "max": hi, "step": step, "mode": mode}
@@ -131,6 +131,8 @@ QUIET_CAP = vol.Schema(
 )
 
 FLAT = {"speakers": SPEAKERS, "schedule": SCHEDULE, "quiet_cap": QUIET_CAP}
+
+
 def page_schema(with_name: bool) -> vol.Schema:
     fields: dict = {}
     if with_name:
@@ -164,7 +166,7 @@ def _apply(opts: dict[str, Any], user_input: dict[str, Any], with_name: bool) ->
         new = {k: v for k, v in (user_input.get(a) or {}).items() if not _empty(v)}
         for k in (A_TIME, A_RAMP):
             new.setdefault(k, (opts.get(a) or {}).get(k, DEFAULTS[a][k]))
-        out[a] = new  # drops 0.2's kind/offset/earliest/latest
+        out[a] = new
     return out
 
 
@@ -191,18 +193,6 @@ def _with_defaults(options: dict[str, Any]) -> dict[str, Any]:
     out = {**DEFAULTS, **options}
     for a in ANCHORS:
         out[a] = {**DEFAULTS[a], **options.get(a, {})}
-    out[CONF_SCHEDULE_TYPE] = curve.schedule_type(options) if options else DEFAULTS[CONF_SCHEDULE_TYPE]
-    out[CONF_CURVE] = curve.curve_name(options) if options else DEFAULTS[CONF_CURVE]
-    return out
-
-
-def _finish(options: dict[str, Any]) -> dict[str, Any]:
-    """The options to store: retired settings dropped, the schedule type and curve explicit."""
-    out = {**options}
-    out[CONF_SCHEDULE_TYPE] = curve.schedule_type(options)
-    out[CONF_CURVE] = curve.curve_name(options)
-    for k in RETIRED_OPTIONS:
-        out.pop(k, None)
     return out
 
 
@@ -220,12 +210,8 @@ def tester_url(hass, options: dict[str, Any]) -> str:
         out[CONF_CAP_ENABLED] = bool(o[CONF_CAP_ENABLED] or o.get(CONF_CAP_ENTITY))
         start, end = curve.cap_window(o, em)
         out[CONF_CAP_START], out[CONF_CAP_END] = clock(start), clock(end)
-        for name, anchor, _ in curve.anchors({**o, CONF_USE_EVENING: True}, em):
-            try:
-                at = clock(anchor.resolve(rise, set_))
-            except schedule.ScheduleError:
-                at = str(o[name][A_TIME])[:5]
-            out[name] = {A_TIME: at, A_RAMP: anchor.ramp}
+        for name, t in curve.anchors({**o, CONF_USE_EVENING: True}, em):
+            out[name] = {A_TIME: clock(t.at), A_RAMP: t.ramp}
         if rise is not None and set_ is not None:
             out["rise"], out["set"] = clock(rise), clock(set_)
         raw = json.dumps(out, separators=(",", ":")).encode()
@@ -252,13 +238,31 @@ class _Page:
     opts: dict[str, Any]
     _with_name = False
 
+    _taken = ""
+
     def _page(self, step_id: str, errors: dict[str, str] | None = None):
         return self.async_show_form(
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(page_schema(self._with_name), _suggested(self.opts)),
             errors=errors or {},
-            description_placeholders=self._placeholders(),
+            description_placeholders={**self._placeholders(), "taken": self._taken},
         )
+
+    def _own_entry_id(self) -> str | None:
+        return None
+
+    def _speakers_taken(self) -> str:
+        """'Kitchen is already in Living room', for speakers another instance controls, or ''."""
+        own = self._own_entry_id()
+        taken = []
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            if entry.entry_id == own:
+                continue
+            for pid in set(self.opts.get(CONF_PLAYERS) or []) & set(entry.options.get(CONF_PLAYERS) or []):
+                st = self.hass.states.get(pid)
+                name = st.attributes.get("friendly_name", pid) if st else pid
+                taken.append(f"{name} is already in {entry.title}")
+        return ", ".join(sorted(taken))
 
     def _placeholders(self) -> dict[str, str]:
         err = check_schedule(self.hass, self.opts)
@@ -273,6 +277,9 @@ class _Page:
         self.opts = _apply(self.opts, user_input, self._with_name)
         if self._with_name and (not self.opts.get(CONF_NAME) or not self.opts.get(CONF_PLAYERS)):
             return self._page(step_id, {"base": "need_speakers"})
+        self._taken = self._speakers_taken()
+        if self._taken:
+            return self._page(step_id, {"base": "speaker_taken"})
         if check_schedule(self.hass, self.opts) is not None:
             return self._page(step_id, {"base": "bad_schedule"})
         return None
@@ -283,14 +290,14 @@ class AdaptiveAudioConfigFlow(_Page, ConfigFlow, domain=DOMAIN):
     _with_name = True
 
     def __init__(self) -> None:
-        self.opts = {k: v for k, v in DEFAULTS.items()}
+        self.opts = dict(DEFAULTS)
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is None:
             return self._page("user")
         if (again := await self._submit("user", user_input)) is not None:
             return again
-        opts = _finish(self.opts)
+        opts = dict(self.opts)
         name = opts.pop(CONF_NAME)
         return self.async_create_entry(title=name, data={}, options=opts)
 
@@ -304,6 +311,9 @@ class AdaptiveAudioOptionsFlow(_Page, OptionsFlow):
     def __init__(self) -> None:
         self.opts: dict[str, Any] | None = None
 
+    def _own_entry_id(self) -> str | None:
+        return self.config_entry.entry_id
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.opts is None:
             self.opts = dict(self.config_entry.options)
@@ -311,4 +321,4 @@ class AdaptiveAudioOptionsFlow(_Page, OptionsFlow):
             return self._page("init")
         if (again := await self._submit("init", user_input)) is not None:
             return again
-        return self.async_create_entry(data=_finish(self.opts))
+        return self.async_create_entry(data=self.opts)

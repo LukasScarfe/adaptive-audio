@@ -480,6 +480,15 @@ class AdaptiveAudioController:
         self.notify()
 
     @callback
+    def quiet_volume_changed(self) -> None:
+        """A lower quiet volume applies at once to anything playing above it."""
+        if self.quiet_active:
+            for pid in self.players:
+                if (st := self.hass.states.get(pid)) is not None:
+                    self.hass.async_create_task(self._enforce_cap(pid, st))
+        self.notify()
+
+    @callback
     def _on_tick(self, _now: datetime) -> None:
         if self.enabled and self.adapt:
             self._adapt()

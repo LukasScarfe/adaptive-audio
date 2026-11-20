@@ -41,6 +41,4 @@ class OptionNumber(AdaptiveAudioEntity, NumberEntity):
             entry, options={**entry.options, self._option: int(value)}
         )
         if self._option == CONF_QUIET_VOLUME:
-            # A lower quiet volume applies at once to anything playing above it.
-            self.controller._was_quiet = False
-            self.controller.quiet_changed()
+            self.controller.quiet_volume_changed()

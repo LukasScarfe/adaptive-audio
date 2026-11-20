@@ -113,6 +113,7 @@ def errors(save):
     return {
         "bad_schedule": "This schedule doesn't work: {error}",
         "need_speakers": "Add a name and at least one speaker.",
+        "speaker_taken": "{taken}. A speaker can only be in one Adaptive Audio group.",
     }
 
 

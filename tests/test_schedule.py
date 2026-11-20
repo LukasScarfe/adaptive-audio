@@ -97,7 +97,6 @@ class ShapeTests(unittest.TestCase):
         # Sigmoid starts gently and is steeper in the middle.
         self.assertLess(s.shape(0.1, s.CURVE_SIGMOID), 0.1)
         self.assertGreater(s.shape(0.6, s.CURVE_SIGMOID), 0.6)
-        self.assertLess(s.shape(0.1, s.CURVE_SIGMOID, 12), s.shape(0.1, s.CURVE_SIGMOID, 3))
 
     def test_custom_sigmoid(self):
         pts = s.parse_points(DEFAULT)
@@ -105,19 +104,18 @@ class ShapeTests(unittest.TestCase):
         self.assertLess(s.target_volume(hm("07:30"), pts, s.CURVE_SIGMOID), s.target_volume(hm("07:30"), pts))
 
 
-def simple(evening=True, kind="fixed", **kw):
-    A = s.Anchor
-    pairs = [(A("fixed", hm("07:30"), ramp=60), 40)]
+def simple(evening=True):
+    T = s.Transition
+    trs = [T(hm("07:30"), 60, 40)]
     if evening:
-        pairs.append((A("fixed", hm("19:00"), ramp=60), 30))
-    pairs.append((A(kind, hm("22:00"), ramp=90, **kw), 15))
-    return pairs
+        trs.append(T(hm("19:00"), 60, 30))
+    trs.append(T(hm("22:00"), 90, 15))
+    return trs
 
 
 class SimpleTests(unittest.TestCase):
-    def target(self, t, pairs=None, curve=s.CURVE_SIGMOID, align=s.ALIGN_CENTRE, rise=None, set_=None):
-        trs = s.transitions(pairs or simple(), rise, set_)
-        return s.simple_target(hm(t), trs, curve, 6, align)
+    def target(self, t, trs=None, curve=s.CURVE_SIGMOID):
+        return s.simple_target(hm(t), trs or simple(), curve)
 
     def test_levels_hold(self):
         self.assertAlmostEqual(self.target("12:00"), 40)
@@ -131,11 +129,6 @@ class SimpleTests(unittest.TestCase):
         self.assertAlmostEqual(self.target("22:00"), 22.5)
         self.assertAlmostEqual(self.target("22:45"), 15)
 
-    def test_end_aligned(self):
-        self.assertAlmostEqual(self.target("21:59", align=s.ALIGN_END), 15 + 0.0001, places=0)
-        self.assertAlmostEqual(self.target("20:30", align=s.ALIGN_END), 30)
-        self.assertAlmostEqual(self.target("21:15", align=s.ALIGN_END), 22.5)
-
     def test_steps_and_linear(self):
         self.assertEqual(self.target("07:29", curve=s.CURVE_STEPS), 15)
         self.assertEqual(self.target("07:30", curve=s.CURVE_STEPS), 40)
@@ -144,22 +137,12 @@ class SimpleTests(unittest.TestCase):
     def test_no_evening(self):
         self.assertAlmostEqual(self.target("20:00", simple(evening=False)), 40)
 
-    def test_sun_clamp(self):
-        # Bedtime = sunset (16:25 in winter), but never before 21:00.
-        pairs = simple(kind="sunset", earliest=hm("21:00"))
-        trs = s.transitions(pairs, hm("07:50"), hm("16:25"))
-        self.assertEqual(next(x.at for x in trs if x.level == 15), hm("21:00"))
-        pairs = simple(kind="sunset", offset=30, latest=hm("21:00"))
-        trs = s.transitions(pairs, hm("07:50"), hm("16:25"))
-        self.assertEqual(next(x.at for x in trs if x.level == 15), hm("16:55"))
-
     def test_overlap(self):
-        trs = s.transitions(simple(), None, None)
-        self.assertFalse(s.overlapping(trs, s.CURVE_SIGMOID, s.ALIGN_CENTRE))
-        A = s.Anchor
-        bad = s.transitions([(A("fixed", hm("19:00"), ramp=240), 30), (A("fixed", hm("20:00"), ramp=60), 15)], None, None)
-        self.assertTrue(s.overlapping(bad, s.CURVE_LINEAR, s.ALIGN_CENTRE))
-        self.assertFalse(s.overlapping(bad, s.CURVE_STEPS, s.ALIGN_CENTRE))
+        self.assertFalse(s.overlapping(simple(), s.CURVE_SIGMOID))
+        T = s.Transition
+        bad = [T(hm("19:00"), 240, 30), T(hm("20:00"), 60, 15)]
+        self.assertTrue(s.overlapping(bad, s.CURVE_LINEAR))
+        self.assertFalse(s.overlapping(bad, s.CURVE_STEPS))
 
 
 if __name__ == "__main__":
