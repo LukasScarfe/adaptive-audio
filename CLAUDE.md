@@ -25,8 +25,8 @@ custom_components/adaptive_audio/
   frontend/adaptive-audio-card.js   the card, vanilla JS + SVG, registered in async_setup
   switch.py sensor.py number.py button.py entity.py   the per-instance entities (one service device)
   const.py        option keys + DEFAULTS
-  brand/          icon.svg + dark_icon.svg (sources, lukas.css light / Moss dark tokens) rendered to
-                  icon.png 256 / icon@2x.png 512 and dark_icon(@2x).png, transparent; HA picks by theme
+  brand/          icon.svg (source, Lukas's HA house theme: #4CAF50 speaker, #2E7D32 bar, #be7d7d wave)
+                  rendered to icon.png 256 / icon@2x.png 512, transparent; one icon reads on light and dark
   strings.json + translations/en.json   generated: edit dev/gen_strings.py, run it
 tests/test_schedule.py   plain unittest for the pure schedule math (also collected by pytest)
 tests/conftest.py        fixtures: fake speakers that record volume_set calls, frozen Vancouver clock, gated ramp sleep
