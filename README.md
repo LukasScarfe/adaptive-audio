@@ -16,6 +16,12 @@ speaker's volume when it starts playing.
 > **[Try it in your browser](https://lukasscarfe.github.io/adaptive-audio/)**: change the
 > settings and see the volume through the day as a chart, before or after you install it.
 
+<img src="docs/images/card.png" alt="The Adaptive Audio card: the day's volume schedule as a curve, with the night cap hours shaded and a speaker's real volume today as dots" width="552">
+
+**This is a beta.** It runs every day in my home, but it hasn't met many other setups yet. If
+something behaves oddly with your speakers, please
+[open an issue](https://github.com/LukasScarfe/adaptive-audio/issues).
+
 ## Contents
 
 - [What it does](#what-it-does)
@@ -137,10 +143,15 @@ To update by hand, replace the folder with the one from the newer release and re
 Add one for each speaker or group of speakers that should share a schedule, for example one for
 the living room and another for the bedroom.
 
+Each speaker can belong to only one of these. Setup tells you if a speaker is already in
+another one.
+
 To change it later, select **Configure** on the integration. It shows the same page. The link at
 the top of the page opens the [online tester](https://lukasscarfe.github.io/adaptive-audio/)
 with your saved settings filled in, so you can try changes and see the day's volume before you
 save them.
+
+<img src="docs/images/configure.png" alt="The Configure page, with the Schedule section open" width="400"> <img src="docs/images/tester.png" alt="The online tester: settings on the left, the day's volume as a chart on the right" width="420">
 
 ## Settings
 
