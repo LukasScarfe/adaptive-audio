@@ -33,6 +33,7 @@ CONF_MODE = "mode"  # 0.1 option: "curve"/"steps" with custom points
 CONF_QUIET_VOLUME = "quiet_volume"
 CONF_QUIET_ENTITY = "quiet_entity"
 CONF_QUIET_STATE = "quiet_state"
+CONF_QUIET_INSTANT = "quiet_instant"  # back to the schedule at once when quiet turns off
 CONF_CAP_ENABLED = "cap_enabled"
 CONF_CAP_ENTITY = "cap_entity"  # optional: the cap is also on while this entity is on
 CONF_CAP_START = "cap_start"
@@ -69,6 +70,7 @@ DEFAULTS = {
     CONF_POINTS: "07:00 20\n10:00 40\n18:00 35\n22:00 15",
     CONF_QUIET_VOLUME: 10,
     CONF_QUIET_STATE: "on",
+    CONF_QUIET_INSTANT: False,
     CONF_CAP_ENABLED: False,
     CONF_CAP_START: "22:00:00",
     CONF_CAP_END: "07:00:00",

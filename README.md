@@ -74,6 +74,10 @@ above it. Turning it on lowers speakers that are already playing. You can also l
 another entity, for example a *night mode* or *baby asleep* switch, so quiet mode is on whenever
 that entity is.
 
+When quiet mode turns off, playing speakers go back up to the scheduled volume gradually, no
+faster than the *Never change the volume faster than* rate. Turn on **Return to the scheduled
+volume instantly** to have them jump straight back instead.
+
 ### Night cap (optional)
 
 A maximum volume during set hours, for example no louder than 25% between 22:00 and 07:00. If
@@ -148,7 +152,7 @@ save them.
 | Leave these inputs alone | Inputs whose volume is never changed, separated by commas, for example `Line In`. | none |
 | Reset after being stopped for | How long a speaker must be stopped before it starts at the scheduled volume again. | 10 min |
 | Follow the schedule again after | With Adjust while playing on: how long a speaker you changed by hand is left alone. 0 waits until it next starts playing. | 0 |
-| Never change the volume faster than | With Adjust while playing on: the most the volume moves each minute. | 10%/min |
+| Never change the volume faster than | The most the volume moves each minute, while Adjust while playing is on and when quiet mode turns off. | 10%/min |
 
 **Schedule**
 
@@ -167,6 +171,7 @@ save them.
 |---|---|---|
 | Quiet volume | The volume while quiet mode is on. Speakers can't go above it. | 10% |
 | Also turn on quiet mode with | An entity that turns quiet mode on while it is in the state you pick (usually *on*). | none |
+| Return to the scheduled volume instantly | When quiet mode turns off, jump straight back to the scheduled volume instead of turning back up gradually. | off |
 | Night cap | Turns the night cap on. Same as the Night cap switch. | off |
 | Also turn on the night cap with | An entity that turns the night cap on while it is on. | none |
 | Night cap volume | The most speakers can be turned up to during night cap hours. | 25% |

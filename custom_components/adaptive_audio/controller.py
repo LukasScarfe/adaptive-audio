@@ -12,6 +12,9 @@ Rules:
 - Either way, a raise above the cap is pulled back to the cap (during cap hours, or at any time
   while quiet is active, when the cap is the quiet volume). Turning quiet on pulls playing
   players down to the quiet volume.
+- Turning quiet off brings playing players back up to the start volume: at once with
+  `quiet_instant`, else by at most `max_rate` % a minute. This happens whether or not adapting
+  is on, and clears any hand-change takeover.
 - Anchors and cap hours can follow time entities; a change to one rebuilds the schedule.
 - A player whose source is in `skip_sources` (e.g. the turntable's Line In) is never touched.
 """
@@ -54,6 +57,7 @@ from .const import (
     CONF_MAX_RATE,
     CONF_PLAYERS,
     CONF_QUIET_ENTITY,
+    CONF_QUIET_INSTANT,
     CONF_QUIET_STATE,
     CONF_QUIET_VOLUME,
     CONF_SKIP_SOURCES,
@@ -113,6 +117,7 @@ class AdaptiveAudioController:
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[Callable[[], None]] = []
         self._was_quiet = False
+        self._returning: set[str] = set()  # players ramping back up after quiet turned off
         self._fn_day: date | None = None
         self._fn: Callable[[int], float] | None = None
         self.marks: list[dict[str, Any]] = []
@@ -325,22 +330,47 @@ class AdaptiveAudioController:
         return True
 
     async def _adapt(self) -> None:
-        """One adapting step for every playing player that hasn't been taken over."""
+        """One step toward the start volume for every playing player that hasn't been taken
+        over: all of them while adapting, else only those coming back from quiet."""
+        if self.quiet_active:
+            self._returning.clear()
         goal = self.start_volume
         if goal is None:
             return
         step = float(self.opt(CONF_MAX_RATE))
         for pid in self.players:
+            returning = pid in self._returning
+            if not (self.adapt or returning):
+                continue
             st = self.hass.states.get(pid)
             if st is None or st.state != STATE_PLAYING or self._skipped(st) or self._taken_over(pid):
+                self._returning.discard(pid)
                 continue
             level = st.attributes.get(ATTR_MEDIA_VOLUME_LEVEL)
             if not isinstance(level, (int, float)):
+                self._returning.discard(pid)
                 continue
             diff = goal - level * 100
+            if abs(diff) <= step:
+                self._returning.discard(pid)
             if abs(diff) < 1:
                 continue
-            await self._set_volume(pid, level * 100 + max(-step, min(step, diff)), "adapt")
+            reason = "adapt" if self.adapt else "quiet off"
+            await self._set_volume(pid, level * 100 + max(-step, min(step, diff)), reason)
+
+    async def _leave_quiet(self) -> None:
+        """Quiet just turned off: bring playing players back to the start volume."""
+        if not self.enabled:
+            return
+        self.manual.clear()
+        if self.opt(CONF_QUIET_INSTANT):
+            for pid in self.players:
+                st = self.hass.states.get(pid)
+                if st is not None and st.state == STATE_PLAYING:
+                    await self.async_apply(pid, "quiet off")
+            return
+        self._returning = set(self.players)
+        await self._adapt()  # the first step now, the rest on the minute tick
 
     # ---- events --------------------------------------------------------------------------
 
@@ -400,17 +430,21 @@ class AdaptiveAudioController:
 
     @callback
     def quiet_changed(self) -> None:
-        """Quiet may have turned on or off: pull playing players down if it turned on."""
+        """Quiet may have turned on or off: pull playing players down if it turned on, bring
+        them back up if it turned off."""
         now_quiet = self.quiet_active
         if now_quiet and not self._was_quiet:
+            self._returning.clear()
             for pid in self.players:
                 if (st := self.hass.states.get(pid)) is not None:
                     self.hass.async_create_task(self._enforce_cap(pid, st))
+        elif self._was_quiet and not now_quiet:
+            self.hass.async_create_task(self._leave_quiet())
         self._was_quiet = now_quiet
         self.notify()
 
     @callback
     def _on_tick(self, _now: datetime) -> None:
-        if self.enabled and self.adapt:
+        if self.enabled and (self.adapt or self._returning):
             self.hass.async_create_task(self._adapt())
         self.notify()

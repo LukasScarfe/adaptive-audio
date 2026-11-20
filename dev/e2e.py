@@ -10,7 +10,7 @@ P="media_player.living_room"
 def vol(): return st(P)["attributes"].get("volume_level")
 entry=[e for e in req("GET","/api/config/config_entries/entry") if e["domain"]=="adaptive_audio" and e["title"]=="Living room"][0]["entry_id"]
 SPEAKERS={"players":[P,"media_player.walkman"],"idle_gap":0,"skip_sources":"Line In","autoreset":0,"max_rate":3}
-QUIET_CAP={"quiet_volume":10,"quiet_entity":"input_boolean.night_mode","quiet_state":"on",
+QUIET_CAP={"quiet_volume":10,"quiet_entity":"input_boolean.night_mode","quiet_state":"on","quiet_instant":False,
            "cap_enabled":False,"cap_start":"22:00:00","cap_end":"07:00:00","cap_volume":25}
 def _values(fields):
     """The page's current values, from its suggested values (sections nested)."""
@@ -87,3 +87,21 @@ call("media_player","media_pause",{"entity_id":P}); call("media_player","media_p
 check("adapt: fresh start clears the takeover", vol(), tgt)
 print("taken over after fresh start:", st(SW)["attributes"]["taken_over"])
 call("switch","turn_off",{"entity_id":SW})
+
+# Leaving quiet: back up by max_rate a minute (adapting off), or at once with quiet_instant.
+Q="switch.adaptive_audio_living_room_quiet_mode"
+print("options:",options(idle_gap=0))
+call("button","press",{"entity_id":"button.adaptive_audio_living_room_set_volume_now"})
+call("switch","turn_on",{"entity_id":Q})
+check("quiet on: down to quiet volume", vol(), 0.10)
+call("media_player","volume_set",{"entity_id":P,"volume_level":0.08})  # a hand change during quiet
+call("switch","turn_off",{"entity_id":Q})
+check("quiet off: first 3% step straight away, hand change ignored", vol(), min(tgt, 0.11))
+time.sleep(62)
+check("quiet off: another step on the tick", vol(), min(tgt, 0.14))
+print("options:",options(idle_gap=0,quiet_instant=True))
+call("switch","turn_on",{"entity_id":Q})
+check("quiet on (instant): down to quiet volume", vol(), 0.10)
+call("switch","turn_off",{"entity_id":Q})
+check("quiet off (instant): straight back to the target", vol(), tgt)
+print("options:",options(idle_gap=0))
