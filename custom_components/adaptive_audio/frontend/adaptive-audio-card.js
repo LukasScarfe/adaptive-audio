@@ -8,12 +8,14 @@
  *
  * Plots the instance's 24 h curve (the sensor's `curve` attribute), a now marker, the cap
  * hours and the quiet level, and each speaker's volume today from the recorder history.
- * Colours come from the HA theme, so it follows light and dark.
+ * Colours come from the HA theme, so it follows light and dark. The SVG is redrawn at the card's
+ * real width (ResizeObserver), so labels keep their size on a narrow card or a phone.
  * The visual editor is HA's built-in card form (getConfigForm), so there is no editor element.
  */
 
 const NS = "http://www.w3.org/2000/svg";
-const W = 640, H = 250, L = 38, R = 12, T = 34, B = 28;
+// The chart is drawn at the card's real pixel width (not scaled), so text stays FONT px.
+const L = 36, R = 12, T = 38, B = 26, FONT = 11, ROW = 14;
 const PLAYER_COLOURS = ["#ff9800", "#4caf50", "#e91e63", "#9c27b0", "#00bcd4"];
 const HISTORY_REFRESH_MS = 5 * 60 * 1000;
 
@@ -67,6 +69,26 @@ class AdaptiveAudioCard extends HTMLElement {
           <div class="err"></div>
         </ha-card>`;
     }
+    if (this.isConnected) this.connectedCallback();
+  }
+
+  connectedCallback() {
+    const plot = this.shadowRoot?.querySelector(".plot");
+    if (this._ro || !plot) return;
+    this._ro = new ResizeObserver(() => {
+      const w = Math.round(plot.clientWidth);
+      if (w && w !== this._width) {
+        this._width = w;
+        this._key = null;
+        if (this._hass) this.hass = this._hass;
+      }
+    });
+    this._ro.observe(plot);
+  }
+
+  disconnectedCallback() {
+    this._ro?.disconnect();
+    this._ro = null;
   }
 
   set hass(hass) {
@@ -152,6 +174,8 @@ class AdaptiveAudioCard extends HTMLElement {
     const live = players.map((p) => (this._hass.states[p]?.attributes?.volume_level ?? null));
     const allVals = [...curve, a.cap_volume || 0, a.quiet_active ? a.quiet_volume : 0,
                      ...Object.values(hist).flat().map((p) => p[1]), ...live.filter((v) => v != null).map((v) => v * 100)];
+    const W = this._width || 640;
+    const H = Math.round(Math.min(260, Math.max(170, W * 0.42)));
     const top = Math.min(100, Math.ceil((Math.max(10, ...allVals) + 8) / 10) * 10);
     const x = (m) => L + ((W - L - R) * m) / 1440;
     const y = (v) => T + (H - T - B) * (1 - v / top);
@@ -162,24 +186,31 @@ class AdaptiveAudioCard extends HTMLElement {
     const gstep = top <= 50 ? 10 : 20;
     for (let v = 0; v <= top; v += gstep) {
       el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: grid, "stroke-width": 0.6 }, svg);
-      el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", fill: text, "font-size": 10 }, svg).textContent = `${v}%`;
+      el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", fill: text, "font-size": FONT }, svg).textContent = `${v}%`;
     }
+    // Hour labels every 3 h, or every 6 h when they wouldn't fit.
+    const hstep = (W - L - R) / 8 >= FONT * 3.6 ? 3 : 6;
     for (let h = 0; h <= 24; h += 3) {
       el("line", { x1: x(h * 60), x2: x(h * 60), y1: T, y2: H - B, stroke: grid, "stroke-width": 0.6 }, svg);
-      el("text", { x: x(h * 60), y: H - B + 15, "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle", fill: text, "font-size": 10 }, svg).textContent = `${String(h).padStart(2, "0")}:00`;
+      if (h % hstep) continue;
+      el("text", { x: x(h * 60), y: H - B + FONT + 5, "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle", fill: text, "font-size": FONT }, svg).textContent = `${String(h).padStart(2, "0")}:00`;
     }
-    // Ramps and anchor names; a label close to the previous one drops to a second row.
-    let lastLabel = -1e9, row = 0;
+    // Ramps and anchor names. A label that would overlap the one before it on its row goes to
+    // the other row; on a narrow card the labels drop the time.
+    const rowEnd = [-1e9, -1e9];
+    const short = W < 420;
     for (const m of [...(a.marks || [])].sort((p, q) => p.at - q.at)) {
       if (m.ramp) {
         const s = m.at - (a.curve_type === "steps" ? 0 : m.ramp / 2);
         el("rect", { x: x(s), y: T, width: x(m.ramp) - L, height: H - T - B, fill: "var(--primary-color)", "fill-opacity": 0.07 }, svg);
       }
       if (m.name) {
-        row = m.at - lastLabel < 170 ? 1 - row : 0;
-        lastLabel = m.at;
-        el("text", { x: x(m.at), y: T - 6 - row * 12, "text-anchor": "middle", fill: text, "font-size": 10 }, svg).textContent =
-          `${m.name[0].toUpperCase()}${m.name.slice(1)} ${hhmm(m.at)}`;
+        const label = `${m.name[0].toUpperCase()}${m.name.slice(1)}${short ? "" : ` ${hhmm(m.at)}`}`;
+        const half = (label.length * FONT * 0.56) / 2;
+        const cx = Math.min(W - R - half, Math.max(L + half, x(m.at)));
+        const row = cx - half > rowEnd[0] + 4 ? 0 : 1;
+        rowEnd[row] = cx + half;
+        el("text", { x: cx, y: T - 6 - row * ROW, "text-anchor": "middle", fill: text, "font-size": FONT }, svg).textContent = label;
       }
     }
     // Cap hours: shade above the cap line.
