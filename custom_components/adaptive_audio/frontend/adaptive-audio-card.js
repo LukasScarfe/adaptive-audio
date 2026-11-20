@@ -9,6 +9,7 @@
  * Plots the instance's 24 h curve (the sensor's `curve` attribute), a now marker, the cap
  * hours and the quiet level, and each speaker's volume today from the recorder history.
  * Colours come from the HA theme, so it follows light and dark.
+ * The visual editor is HA's built-in card form (getConfigForm), so there is no editor element.
  */
 
 const NS = "http://www.w3.org/2000/svg";
@@ -34,7 +35,6 @@ const hhmm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${Strin
 
 class AdaptiveAudioCard extends HTMLElement {
   setConfig(config) {
-    if (!config.entity) throw new Error("Set `entity` to an Adaptive Audio scheduled volume sensor");
     this._config = { show_history: true, ...config };
     this._history = {};
     this._historyAt = 0;
@@ -71,9 +71,11 @@ class AdaptiveAudioCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    const st = hass.states[this._config.entity];
+    const entity = this._config.entity;
+    const st = entity ? hass.states[entity] : undefined;
     if (!st) {
-      this.shadowRoot.querySelector(".err").textContent = `${this._config.entity} not found`;
+      this.shadowRoot.querySelector(".err").textContent = entity ? `${entity} not found` : "Pick a speaker group in the card settings.";
+      this._key = undefined;
       return;
     }
     // Redraw only when something the card shows has changed (hass updates constantly).
@@ -236,6 +238,24 @@ class AdaptiveAudioCard extends HTMLElement {
 
   getCardSize() {
     return 5;
+  }
+
+  static getConfigForm() {
+    const labels = { entity: "Speaker group", title: "Title", show_history: "Show today's speaker volumes" };
+    const helpers = {
+      entity: "The scheduled volume sensor of an Adaptive Audio speaker group.",
+      title: "Optional. Leave it empty to use the speaker group's name.",
+      show_history: "Dots on the chart show each speaker's real volume today.",
+    };
+    return {
+      schema: [
+        { name: "entity", required: true, selector: { entity: { filter: { integration: "adaptive_audio", domain: "sensor" } } } },
+        { name: "title", selector: { text: {} } },
+        { name: "show_history", default: true, selector: { boolean: {} } },
+      ],
+      computeLabel: (s) => labels[s.name],
+      computeHelper: (s) => helpers[s.name],
+    };
   }
 
   static getStubConfig(hass) {

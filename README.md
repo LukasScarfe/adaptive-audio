@@ -198,7 +198,8 @@ press *Set volume now* when you get home.
 ## Card
 
 The card comes with the integration, so you don't need to add a resource. Add it from the card
-picker (search for *Adaptive Audio*), or in YAML:
+picker (search for *Adaptive Audio*) and set it up in the card editor: pick the speaker group,
+and optionally a title and whether to show today's speaker volumes. Or in YAML:
 
 ```yaml
 type: custom:adaptive-audio-card
