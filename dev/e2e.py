@@ -30,6 +30,8 @@ def options(**kw):
         f=req("POST",f"{U}/{fid}",v)
         if f["type"]!="form": break
     time.sleep(2); return f["type"]
+def between(name, got, lo, hi):
+    ok = got is not None and lo-0.001 <= got <= hi+0.001; print(("PASS" if ok else "FAIL"), name, "got", got, "want", lo, "to", hi)
 def check(name, got, want):
     ok = abs((got or -1)-want)<0.011; print(("PASS" if ok else "FAIL"), name, "got", got, "want", want)
 tgt=int(st("sensor.adaptive_audio_living_room_scheduled_volume")["state"])/100
@@ -77,8 +79,8 @@ print("options:",options(idle_gap=0))
 call("switch","turn_off",{"entity_id":SW})
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.25})
 call("switch","turn_on",{"entity_id":SW})
-time.sleep(63)
-check("adapt: one max_rate (3%) step toward the target", vol(), 0.28)
+time.sleep(63)  # the tick starts a 1% ramp, 3 steps a minute; 1-3 steps in so far
+between("adapt: 1% steps toward the target, no more than 3% a minute", vol(), 0.26, 0.28)
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.55})
 print("taken over:", st(SW)["attributes"]["taken_over"])
 time.sleep(62)
@@ -88,7 +90,7 @@ check("adapt: fresh start clears the takeover", vol(), tgt)
 print("taken over after fresh start:", st(SW)["attributes"]["taken_over"])
 call("switch","turn_off",{"entity_id":SW})
 
-# Leaving quiet: back up by max_rate a minute (adapting off), or at once with quiet_instant.
+# Leaving quiet: back up in 1% steps, max_rate a minute (adapting off), or at once with quiet_instant.
 Q="switch.adaptive_audio_living_room_quiet_mode"
 print("options:",options(idle_gap=0))
 call("button","press",{"entity_id":"button.adaptive_audio_living_room_set_volume_now"})
@@ -96,9 +98,11 @@ call("switch","turn_on",{"entity_id":Q})
 check("quiet on: down to quiet volume", vol(), 0.10)
 call("media_player","volume_set",{"entity_id":P,"volume_level":0.08})  # a hand change during quiet
 call("switch","turn_off",{"entity_id":Q})
-check("quiet off: first 3% step straight away, hand change ignored", vol(), min(tgt, 0.11))
-time.sleep(62)
-check("quiet off: another step on the tick", vol(), min(tgt, 0.14))
+check("quiet off: first 1% step straight away, hand change ignored", vol(), min(tgt, 0.09))
+time.sleep(10)
+check("quiet off: no second step before 20 s", vol(), min(tgt, 0.09))
+time.sleep(51)
+between("quiet off: 3 more 1% steps in the minute", vol(), min(tgt, 0.11), min(tgt, 0.12))
 print("options:",options(idle_gap=0,quiet_instant=True))
 call("switch","turn_on",{"entity_id":Q})
 check("quiet on (instant): down to quiet volume", vol(), 0.10)

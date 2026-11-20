@@ -28,7 +28,7 @@
               "skip_sources": "If a speaker is playing one of these inputs, its volume is never changed. Separate them with commas, for example: Line In",
               "idle_gap": "Once a speaker has been stopped this long, it starts at the scheduled volume the next time it plays. Shorter pauses keep your volume.",
               "autoreset": "Only matters when Adjust while playing is on. If you change a speaker's volume yourself, it stops following the schedule. 0 waits until it next starts playing.",
-              "max_rate": "Playing speakers move toward the scheduled volume by at most this much each minute: while Adjust while playing is on, and when quiet mode turns off. Starting to play, turning quiet mode on and the night cap still change the volume straight away."
+              "max_rate": "Playing speakers move toward the scheduled volume in 1% steps, at most this much each minute: while Adjust while playing is on, and when quiet mode turns off. Starting to play, turning quiet mode on and the night cap still change the volume straight away."
             }
           },
           "schedule": {
@@ -153,7 +153,7 @@
               "skip_sources": "If a speaker is playing one of these inputs, its volume is never changed. Separate them with commas, for example: Line In",
               "idle_gap": "Once a speaker has been stopped this long, it starts at the scheduled volume the next time it plays. Shorter pauses keep your volume.",
               "autoreset": "Only matters when Adjust while playing is on. If you change a speaker's volume yourself, it stops following the schedule. 0 waits until it next starts playing.",
-              "max_rate": "Playing speakers move toward the scheduled volume by at most this much each minute: while Adjust while playing is on, and when quiet mode turns off. Starting to play, turning quiet mode on and the night cap still change the volume straight away."
+              "max_rate": "Playing speakers move toward the scheduled volume in 1% steps, at most this much each minute: while Adjust while playing is on, and when quiet mode turns off. Starting to play, turning quiet mode on and the night cap still change the volume straight away."
             }
           },
           "schedule": {

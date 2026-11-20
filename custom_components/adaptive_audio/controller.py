@@ -3,8 +3,9 @@
 Rules:
 - A player that starts playing after `idle_gap` minutes of not playing gets the start volume:
   the quiet volume while quiet is active, else the schedule's target, never above the cap.
-- With "Adapt while playing" on, every minute a playing player moves toward that volume by at
-  most `max_rate` % (10 % by default). Starts, quiet mode and the night cap still apply at once. A hand change (any volume change Adaptive Audio didn't make) stops
+- With "Adapt while playing" on, every minute a playing player that is off that volume starts
+  ramping toward it in 1 % steps, `max_rate` steps a minute (10 by default), so it never moves
+  faster than `max_rate` % a minute and never jumps. Starts, quiet mode and the night cap still apply at once. A hand change (any volume change Adaptive Audio didn't make) stops
   adapting that player until its next fresh start, or for `autoreset` minutes if that is set.
 - With it off, the volume is left alone mid-play.
 - The night cap is on while its switch (the `cap_enabled` option) or its linked entity is on, and
@@ -13,7 +14,7 @@ Rules:
   while quiet is active, when the cap is the quiet volume). Turning quiet on pulls playing
   players down to the quiet volume.
 - Turning quiet off brings playing players back up to the start volume: at once with
-  `quiet_instant`, else by at most `max_rate` % a minute. This happens whether or not adapting
+  `quiet_instant`, else by the same 1 % ramp at `max_rate` % a minute. This happens whether or not adapting
   is on, and clears any hand-change takeover.
 - Anchors and cap hours can follow time entities; a change to one rebuilds the schedule.
 - A player whose source is in `skip_sources` (e.g. the turntable's Line In) is never touched.
@@ -21,6 +22,7 @@ Rules:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Callable
 from datetime import date, datetime, timedelta
@@ -117,7 +119,8 @@ class AdaptiveAudioController:
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[Callable[[], None]] = []
         self._was_quiet = False
-        self._returning: set[str] = set()  # players ramping back up after quiet turned off
+        self._ramping: dict[str, str] = {}  # players ramping toward the start volume -> reason
+        self._ramp_task: asyncio.Task | None = None
         self._fn_day: date | None = None
         self._fn: Callable[[int], float] | None = None
         self.marks: list[dict[str, Any]] = []
@@ -163,6 +166,10 @@ class AdaptiveAudioController:
     def async_stop(self) -> None:
         while self._unsubs:
             self._unsubs.pop()()
+        self._ramping.clear()
+        if self._ramp_task is not None:
+            self._ramp_task.cancel()
+            self._ramp_task = None
 
     @callback
     def add_listener(self, cb: Callable[[], None]) -> Callable[[], None]:
@@ -329,34 +336,62 @@ class AdaptiveAudioController:
             return False
         return True
 
-    async def _adapt(self) -> None:
-        """One step toward the start volume for every playing player that hasn't been taken
-        over: all of them while adapting, else only those coming back from quiet."""
-        if self.quiet_active:
-            self._returning.clear()
+    def _adapt(self) -> None:
+        """The minute tick while adapting: start ramping every playing player that is off the
+        start volume and hasn't been taken over."""
         goal = self.start_volume
-        if goal is None:
+        if goal is None or self.quiet_active:
             return
-        step = float(self.opt(CONF_MAX_RATE))
         for pid in self.players:
-            returning = pid in self._returning
-            if not (self.adapt or returning):
+            if pid in self._ramping:
                 continue
             st = self.hass.states.get(pid)
             if st is None or st.state != STATE_PLAYING or self._skipped(st) or self._taken_over(pid):
-                self._returning.discard(pid)
                 continue
             level = st.attributes.get(ATTR_MEDIA_VOLUME_LEVEL)
-            if not isinstance(level, (int, float)):
-                self._returning.discard(pid)
-                continue
-            diff = goal - level * 100
-            if abs(diff) <= step:
-                self._returning.discard(pid)
-            if abs(diff) < 1:
-                continue
-            reason = "adapt" if self.adapt else "quiet off"
-            await self._set_volume(pid, level * 100 + max(-step, min(step, diff)), reason)
+            if isinstance(level, (int, float)) and abs(goal - level * 100) >= 1:
+                self._ramping[pid] = "adapt"
+        self._start_ramp()
+
+    def _start_ramp(self) -> None:
+        if self._ramping and (self._ramp_task is None or self._ramp_task.done()):
+            self._ramp_task = self.entry.async_create_background_task(
+                self.hass, self._ramp(), f"adaptive_audio ramp {self.entry.entry_id}"
+            )
+
+    async def _ramp(self) -> None:
+        """Move ramping players 1 % at a time toward the start volume, `max_rate` steps a
+        minute, until each one gets there (or stops playing, is taken over, or quiet starts)."""
+        while self._ramping:
+            goal = self.start_volume
+            if not self.enabled or self.quiet_active or goal is None:
+                self._ramping.clear()
+                return
+            for pid, reason in list(self._ramping.items()):
+                st = self.hass.states.get(pid)
+                level = None if st is None else st.attributes.get(ATTR_MEDIA_VOLUME_LEVEL)
+                if (
+                    st is None
+                    or st.state != STATE_PLAYING
+                    or self._skipped(st)
+                    or self._taken_over(pid)
+                    or not isinstance(level, (int, float))
+                    or (reason == "adapt" and not self.adapt)
+                ):
+                    self._ramping.pop(pid, None)
+                    continue
+                expected = self._expected.get(pid)
+                if expected is not None and abs(level - expected) <= _TOLERANCE:
+                    level = expected  # step from what we set, not a rounded or late report
+                diff = goal - level * 100
+                if abs(diff) < 0.5:
+                    self._ramping.pop(pid, None)
+                    continue
+                if abs(diff) <= 1:
+                    self._ramping.pop(pid, None)
+                await self._set_volume(pid, level * 100 + max(-1.0, min(1.0, diff)), reason)
+            if self._ramping:
+                await asyncio.sleep(60 / max(1.0, float(self.opt(CONF_MAX_RATE))))
 
     async def _leave_quiet(self) -> None:
         """Quiet just turned off: bring playing players back to the start volume."""
@@ -369,8 +404,9 @@ class AdaptiveAudioController:
                 if st is not None and st.state == STATE_PLAYING:
                     await self.async_apply(pid, "quiet off")
             return
-        self._returning = set(self.players)
-        await self._adapt()  # the first step now, the rest on the minute tick
+        for pid in self.players:
+            self._ramping[pid] = "quiet off"
+        self._start_ramp()
 
     # ---- events --------------------------------------------------------------------------
 
@@ -434,7 +470,7 @@ class AdaptiveAudioController:
         them back up if it turned off."""
         now_quiet = self.quiet_active
         if now_quiet and not self._was_quiet:
-            self._returning.clear()
+            self._ramping.clear()
             for pid in self.players:
                 if (st := self.hass.states.get(pid)) is not None:
                     self.hass.async_create_task(self._enforce_cap(pid, st))
@@ -445,6 +481,6 @@ class AdaptiveAudioController:
 
     @callback
     def _on_tick(self, _now: datetime) -> None:
-        if self.enabled and (self.adapt or self._returning):
-            self.hass.async_create_task(self._adapt())
+        if self.enabled and self.adapt:
+            self._adapt()
         self.notify()

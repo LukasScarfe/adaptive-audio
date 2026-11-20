@@ -61,8 +61,8 @@ starts playing after a break, it goes back to the schedule.
 
 By default the volume is only set when playback starts. Turn on **Adjust while playing** and
 speakers that are already playing slowly follow the schedule too: as the evening gets later, the
-volume drifts down. It never moves faster than a rate you set (10% a minute by default), so you
-won't notice a jump.
+volume drifts down. It moves in 1% steps, never faster than a rate you set (10% a minute by
+default, so one step every 6 seconds), so you won't notice a jump.
 
 If you change a speaker's volume while this is on, that speaker stops following the schedule
 until it next starts playing, or after a number of minutes you choose.
@@ -74,8 +74,8 @@ above it. Turning it on lowers speakers that are already playing. You can also l
 another entity, for example a *night mode* or *baby asleep* switch, so quiet mode is on whenever
 that entity is.
 
-When quiet mode turns off, playing speakers go back up to the scheduled volume gradually, no
-faster than the *Never change the volume faster than* rate. Turn on **Return to the scheduled
+When quiet mode turns off, playing speakers go back up to the scheduled volume gradually in 1%
+steps, no faster than the *Never change the volume faster than* rate. Turn on **Return to the scheduled
 volume instantly** to have them jump straight back instead.
 
 ### Night cap (optional)
@@ -152,7 +152,7 @@ save them.
 | Leave these inputs alone | Inputs whose volume is never changed, separated by commas, for example `Line In`. | none |
 | Reset after being stopped for | How long a speaker must be stopped before it starts at the scheduled volume again. | 10 min |
 | Follow the schedule again after | With Adjust while playing on: how long a speaker you changed by hand is left alone. 0 waits until it next starts playing. | 0 |
-| Never change the volume faster than | The most the volume moves each minute, while Adjust while playing is on and when quiet mode turns off. | 10%/min |
+| Never change the volume faster than | The most the volume moves each minute, in 1% steps, while Adjust while playing is on and when quiet mode turns off. | 10%/min |
 
 **Schedule**
 
