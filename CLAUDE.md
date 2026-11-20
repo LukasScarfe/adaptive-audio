@@ -28,11 +28,16 @@ custom_components/adaptive_audio/
   brand/          icon.svg + dark_icon.svg (sources, lukas.css light / Moss dark tokens) rendered to
                   icon.png 256 / icon@2x.png 512 and dark_icon(@2x).png, transparent; HA picks by theme
   strings.json + translations/en.json   generated: edit dev/gen_strings.py, run it
-tests/test_schedule.py   python3 tests/test_schedule.py
+tests/test_schedule.py   plain unittest for the pure schedule math (also collected by pytest)
+tests/conftest.py        fixtures: fake speakers that record volume_set calls, frozen Vancouver clock, gated ramp sleep
+tests/test_controller.py one test per rule in the controller.py docstring
+tests/test_config_flow.py  setup/Configure page: errors and saved options
+pytest.ini  requirements_test.txt   asyncio_mode=auto; phcc pinned (needs Python 3.14)
 dev/docker-compose.yml   throwaway HA on raccoon:8126; dev/config/ is gitignored
 dev/e2e.py               end-to-end checks against the dev HA's demo speakers
 site/                    the online tester (GitHub Pages): index.html + app.js + style.css (lukas.css
                          + a Home Assistant style); runs const/schedule/curve.py in Pyodide
+.github/workflows/validate.yml  hassfest, HACS validation and pytest on every push and PR
 .github/workflows/pages.yml   publishes site/ + those three .py files into py/ on push to main
 ```
 
@@ -52,7 +57,7 @@ Production HA is off-box and raccoon can't restart it, so develop against the de
 ```bash
 docker compose -f dev/docker-compose.yml up -d        # http://raccoon:8126, user dev / devdevdev
 docker compose -f dev/docker-compose.yml restart      # after Python edits
-python3 tests/test_schedule.py
+python3 tests/test_schedule.py                        # pure math, no dependencies
 python3 dev/e2e.py <token-file>                       # needs an entry with demo living_room + walkman
 ```
 
@@ -68,6 +73,22 @@ serves it the legacy build, which doesn't load extra modules (cards show "Config
 Real browsers are fine. For a screenshot, render the card on a blank page with a stand-in `hass`
 (`states`, `config.time_zone`, `callWS` returning history). The same old tzdata predates BC's
 permanent UTC-7, so give the stand-in `Etc/GMT+7`.
+
+## Tests
+
+`pytest tests -q` needs Python 3.14 and `pip install -r requirements_test.txt` (the
+pytest-homeassistant-custom-component release that matches a Home Assistant version; bump the
+pin when you move to a newer HA). Raccoon's host Python has no venv module, so run it in Docker:
+
+```bash
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim sh -c \
+  "pip install -q -r requirements_test.txt && pytest tests -q"
+```
+
+The tests never touch a real speaker: `conftest.py` registers a fake `media_player.volume_set` that
+records calls and reports the new level back. The `frontend` component is stubbed (its web files
+aren't installed). A test that fails means the code broke a rule in the `controller.py`
+docstring: fix the code, not the test, unless the rule itself changed.
 
 ## Releasing
 
