@@ -12,3 +12,6 @@ dev/config/*
 .DS_Store
 *.swp
 site/py/
+
+# Icon drafts (kept locally, not part of the integration)
+logo-mockups/

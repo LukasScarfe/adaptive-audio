@@ -3,21 +3,25 @@
 Rules:
 - A player that starts playing after `idle_gap` minutes of not playing gets the start volume:
   the quiet volume while quiet is active, else the schedule's target, never above the cap.
-- With "Adapt while playing" on, every minute a playing player that is off that volume starts
+- With Adjust while playing on (the `adapt` option, on by default; also its switch), every minute a playing player that is off that volume starts
   ramping toward it in 1 % steps, `max_rate` steps a minute (10 by default), so it never moves
   faster than `max_rate` % a minute and never jumps. Starts, quiet mode and the night cap still apply at once. A hand change (any volume change Adaptive Audio didn't make) stops
   adapting that player until its next fresh start, or for `autoreset` minutes if that is set.
 - With it off, the volume is left alone mid-play.
 - The night cap is on while its switch (the `cap_enabled` option) or its linked entity is on, and
   then applies during cap hours (clock times, or time entities such as a time helper).
-- Either way, a raise above the cap is pulled back to the cap (during cap hours, or at any time
-  while quiet is active, when the cap is the quiet volume). Turning quiet on pulls playing
-  players down to the quiet volume.
+- Either way, a playing player above the cap is pulled straight down to it (during cap hours, or
+  at any time while quiet is active, when the cap is the quiet volume): when its volume is raised,
+  when the cap turns on, and on the 1-minute tick, so cap hours starting mid-play apply at once.
+  Turning quiet on pulls playing players down to the quiet volume.
 - Turning quiet off brings playing players back up to the start volume: at once with
   `quiet_instant`, else by the same 1 % ramp at `max_rate` % a minute. This happens whether or not adapting
   is on, and clears any hand-change takeover.
 - Anchors and cap hours can follow time entities; a change to one rebuilds the schedule.
 - A player whose source is in `skip_sources` (e.g. the turntable's Line In) is never touched.
+
+simulate.py restates these rules for the online tester; tests/test_simulate.py fails if the two
+disagree, so change both together.
 """
 
 from __future__ import annotations
@@ -51,6 +55,7 @@ from homeassistant.util import dt as dt_util
 
 from . import curve, schedule
 from .const import (
+    CONF_ADAPT,
     CONF_AUTORESET,
     CONF_CAP_ENABLED,
     CONF_CAP_ENTITY,
@@ -111,7 +116,6 @@ class AdaptiveAudioController:
         self.entry = entry
         self.enabled = True  # restored by the switches
         self.quiet_switch = False
-        self.adapt = False
         self.last_applied: dict[str, dict] = {}
         self.manual: dict[str, datetime] = {}  # players a hand change has taken over
         self._expected: dict[str, float] = {}  # the level we last set per player
@@ -131,6 +135,11 @@ class AdaptiveAudioController:
 
     def opt(self, key: str):
         return curve.opt(self.entry.options, key)
+
+    @property
+    def adapt(self) -> bool:
+        """Adjust while playing: the `adapt` option, which its switch also sets."""
+        return bool(self.opt(CONF_ADAPT))
 
     @property
     def players(self) -> list[str]:
@@ -490,6 +499,15 @@ class AdaptiveAudioController:
 
     @callback
     def _on_tick(self, _now: datetime) -> None:
-        if self.enabled and self.adapt:
-            self._adapt()
+        if self.enabled:
+            self.hass.async_create_task(self._tick())
         self.notify()
+
+    async def _tick(self) -> None:
+        """Every minute: hold playing players to the cap (night cap hours may just have begun),
+        then, while adapting, start ramping the ones that are off the start volume."""
+        for pid in self.players:
+            if (st := self.hass.states.get(pid)) is not None:
+                await self._enforce_cap(pid, st)
+        if self.adapt:
+            self._adapt()

@@ -234,7 +234,7 @@ tbody tr:nth-child(odd) td { background: var(--surface); }
 /* ---------- page ---------- */
 [hidden] { display: none !important; }
 /* Adaptive Audio tester. Chart tokens for both styles and themes. */
-:root { --curve: var(--focus); --band: var(--blue); --cap: var(--red); --quiet: var(--muted); }
+:root { --curve: var(--focus); --band: var(--blue); --cap: var(--red); --quiet: var(--muted); --speaker: var(--warn); --play: var(--blue); }
 
 .intro { max-width: 70ch; }
 .layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; align-items: start; }
@@ -246,18 +246,46 @@ tbody tr:nth-child(odd) td { background: var(--surface); }
   .layout .fields { grid-row: 2; }
   .layout .chart-col { margin: 0 -16px; padding: 8px 16px 8px; border-bottom: 1px solid var(--line); }
 }
-#chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
-#chart text { font-family: var(--font-body); font-size: 12px; fill: var(--muted); }
-#chart .grid { stroke: var(--line); stroke-width: 1; }
-#chart .curve { fill: none; stroke: var(--curve); stroke-width: 3; stroke-linejoin: round; }
-#chart .band { fill: var(--band); fill-opacity: 0.14; }
-#chart .capband { fill: var(--cap); fill-opacity: 0.12; }
-#chart .capline { stroke: var(--cap); stroke-width: 1.5; stroke-dasharray: 5 4; }
-#chart text.cap { fill: var(--cap); }
-#chart .quietline { stroke: var(--quiet); stroke-width: 1.5; stroke-dasharray: 2 4; }
-#chart .cursor { stroke: var(--axis); stroke-width: 1; }
-#chart .dot { fill: var(--curve); stroke: var(--bg); stroke-width: 2; }
-#chart text.mark { fill: var(--ink-2); }
+.chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart text { font-family: var(--font-body); font-size: 12px; fill: var(--muted); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .curve { fill: none; stroke: var(--curve); stroke-width: 3; stroke-linejoin: round; }
+.chart .band { fill: var(--band); fill-opacity: 0.14; }
+.chart .capband { fill: var(--cap); fill-opacity: 0.12; }
+.chart .capline { stroke: var(--cap); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart text.cap { fill: var(--cap); }
+.chart .quietline { stroke: var(--quiet); stroke-width: 1.5; stroke-dasharray: 2 4; }
+.chart .cursor { stroke: var(--axis); stroke-width: 1; }
+.chart .dot { fill: var(--curve); stroke: var(--bg); stroke-width: 2; }
+.chart text.mark { fill: var(--ink-2); }
+.chart .playband { fill: var(--play); fill-opacity: 0.16; }
+.chart .schedline { fill: none; stroke: var(--curve); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.8; }
+.chart .speaker { fill: none; stroke: var(--speaker); stroke-width: 3; stroke-linejoin: round; }
+.chart .evtick { stroke: var(--ink-2); stroke-width: 2; }
+.chart .speakerdot { fill: var(--speaker); }
+h2.part { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); }
+.layout.sim .log { max-height: 40vh; overflow: auto; }
+@media (max-width: 860px) { .layout.sim .chart-col { position: static; } .layout.sim .log { max-height: none; } }
+.log-title { margin: 20px 0 6px; font-size: 1rem; }
+.log li { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.log li .num { color: var(--ink); flex: none; }
+.unit { display: flex; align-items: center; gap: 10px; }
+.unit input { max-width: 9em; }
+.unit span { color: var(--muted); font-family: var(--font-mono); }
+.entity { display: grid; gap: 8px; }
+.entity .entity-time label { font-weight: 400; font-size: 15px; }
+.entity .help.mono-id { margin: 0; }
+.events li { display: grid; grid-template-columns: 8em minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.events li.muted { display: block; }
+.events input, .events select { min-height: var(--ctl); padding: 0.25em 0.5em; }
+.events input[type=number] { width: 4.5em; }
+.events input[type=text] { width: 8em; }
+.events li > span:empty { display: none; }
+@media (max-width: 520px) {
+  .events li { grid-template-columns: 8em minmax(0, 1fr); }
+}
+.fields .picks { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.fields .picks button { white-space: normal; min-height: 44px; line-height: 1.2; padding: 6px 10px; }
 .readout { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); min-height: 1.6em; margin: 4px 0 0; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; color: var(--muted); margin: 6px 0 0; padding: 0; list-style: none; }
 .legend li { display: inline-flex; align-items: center; gap: 6px; }

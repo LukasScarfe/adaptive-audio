@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from . import curve, schedule
 from .const import (
     A_ENTITY,
+    CONF_ADAPT,
     A_RAMP,
     A_TIME,
     ANCHORS,
@@ -97,6 +98,7 @@ SPEAKERS = vol.Schema(
         vol.Required(CONF_PLAYERS): _PLAYERS,
         vol.Optional(CONF_SKIP_SOURCES): selector.TextSelector(),
         vol.Required(CONF_IDLE_GAP): _num(0, 720, "min"),
+        vol.Required(CONF_ADAPT): selector.BooleanSelector(),
         vol.Required(CONF_AUTORESET): _num(0, 1440, "min"),
         vol.Required(CONF_MAX_RATE): _num(1, 100, "%/min"),
     }
@@ -197,21 +199,27 @@ def _with_defaults(options: dict[str, Any]) -> dict[str, Any]:
 
 
 def tester_url(hass, options: dict[str, Any]) -> str:
-    """The online tester, opened with these settings (time entities and sun times as they are
-    today). The settings ride in the URL hash, so they never reach a server."""
+    """The online tester, opened with every setting on this page except the speakers, plus what
+    the linked entities hold today (the tester stands in for them). The settings ride in the URL
+    hash, so they never reach a server."""
     try:
         o = _with_defaults(options)
-        em = lambda e: entity_minute(hass, e)  # noqa: E731
         clock = lambda m: f"{int(m) // 60 % 24:02d}:{int(m) % 60:02d}"  # noqa: E731
         rise, set_ = sun_minutes(hass, dt_util.now().date())
-        keys = (CONF_SCHEDULE_TYPE, CONF_CURVE, CONF_DAY_VOLUME, CONF_USE_EVENING, CONF_EVENING_VOLUME,
-                CONF_NIGHT_VOLUME, CONF_POINTS, CONF_QUIET_VOLUME, CONF_CAP_VOLUME)
-        out: dict[str, Any] = {k: o[k] for k in keys}
-        out[CONF_CAP_ENABLED] = bool(o[CONF_CAP_ENABLED] or o.get(CONF_CAP_ENTITY))
-        start, end = curve.cap_window(o, em)
-        out[CONF_CAP_START], out[CONF_CAP_END] = clock(start), clock(end)
-        for name, t in curve.anchors({**o, CONF_USE_EVENING: True}, em):
-            out[name] = {A_TIME: clock(t.at), A_RAMP: t.ramp}
+        out: dict[str, Any] = {
+            str(k): o[str(k)] for schema in FLAT.values() for k in schema.schema if str(k) in o
+        }
+        out.pop(CONF_PLAYERS, None)
+        for a in ANCHORS:
+            out[a] = dict(o[a])
+        entities: dict[str, str] = {}
+        for eid in curve.time_entities({**o, CONF_SCHEDULE_TYPE: "simple"}):
+            if (m := entity_minute(hass, eid)) is not None:
+                entities[eid] = clock(m)
+        for key in (CONF_QUIET_ENTITY, CONF_CAP_ENTITY):
+            if (eid := o.get(key)) and (st := hass.states.get(eid)) is not None:
+                entities[eid] = st.state
+        out["entities"] = entities
         if rise is not None and set_ is not None:
             out["rise"], out["set"] = clock(rise), clock(set_)
         raw = json.dumps(out, separators=(",", ":")).encode()

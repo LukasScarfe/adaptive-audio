@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
 from unittest.mock import patch
@@ -155,9 +155,12 @@ async def settle(hass: HomeAssistant) -> None:
         await asyncio.sleep(0)
 
 
-def at(freezer, hour: int, minute: int = 0) -> None:
-    """Freeze the clock at a Vancouver local time on 2026-11-20 (PST, UTC-8)."""
-    freezer.move_to(dt_util.as_utc(dt_util.parse_datetime(f"2026-11-20T{hour:02d}:{minute:02d}:00-08:00")))
+def at(freezer, hour: int, minute: int = 0, second: int = 0) -> None:
+    """Freeze the clock at a Vancouver wall-clock time on 2026-11-20. The offset comes from the
+    tzdata (BC is UTC-8 in older tzdata, permanent UTC-7 in newer), never a hard-coded one, so
+    the schedule sees exactly the time the test names."""
+    local = datetime(2026, 11, 20, hour, minute, second, tzinfo=dt_util.get_default_time_zone())
+    freezer.move_to(dt_util.as_utc(local))
 
 
 class Ramp:

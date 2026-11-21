@@ -1,10 +1,10 @@
 # Publishes the online tester (site/) to GitHub Pages, with the integration's own schedule
-# math copied in so the page always matches the integration.
+# math and speaker simulator copied in so the page always matches the integration.
 name: Tester page
 on:
   push:
     branches: [main]
-    paths: ["site/**", "custom_components/adaptive_audio/const.py", "custom_components/adaptive_audio/schedule.py", "custom_components/adaptive_audio/curve.py", ".github/workflows/pages.yml"]
+    paths: ["site/**", "custom_components/adaptive_audio/const.py", "custom_components/adaptive_audio/schedule.py", "custom_components/adaptive_audio/curve.py", "custom_components/adaptive_audio/simulate.py", ".github/workflows/pages.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
         run: |
           cp -r site _site
           mkdir -p _site/py
-          cp custom_components/adaptive_audio/{const,schedule,curve}.py _site/py/
+          cp custom_components/adaptive_audio/{const,schedule,curve,simulate}.py _site/py/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

@@ -62,6 +62,27 @@
       </div>
     </form>
   </div>
+
+  <h2 class="part">Try it on a speaker</h2>
+  <p class="intro">One speaker through a day with the settings above, on repeat. Say what happens, like when it plays
+  and when someone changes the volume, and see what Adaptive Audio would do. It follows the same rules as the
+  integration.</p>
+  <div class="layout sim">
+    <div class="chart-col">
+      <div id="sim-box"></div>
+      <p class="readout" id="sim-readout" aria-live="polite"></p>
+      <ul class="legend" id="sim-legend" hidden>
+        <li><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="0" x2="28" y1="6" y2="6" style="stroke:var(--speaker);stroke-width:3"/></svg>Speaker volume</li>
+        <li><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="0" x2="28" y1="6" y2="6" style="stroke:var(--curve);stroke-width:1.5;stroke-dasharray:4 3"/></svg>Scheduled volume</li>
+        <li><svg viewBox="0 0 28 12" aria-hidden="true"><rect width="28" height="12" style="fill:var(--play);fill-opacity:.25"/></svg>Playing</li>
+        <li data-k="cap"><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="0" x2="28" y1="6" y2="6" style="stroke:var(--cap);stroke-width:1.5;stroke-dasharray:5 4"/></svg>Night cap</li>
+        <li><svg viewBox="0 0 28 12" aria-hidden="true"><line x1="14" x2="14" y1="4" y2="12" style="stroke:var(--ink-2);stroke-width:2"/></svg>Something happens</li>
+      </ul>
+      <h3 class="log-title">What Adaptive Audio does</h3>
+      <ol class="log plain" id="sim-log"></ol>
+    </div>
+    <form class="fields" id="sim-fields" autocomplete="off" onsubmit="return false"></form>
+  </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js"></script>

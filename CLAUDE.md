@@ -19,6 +19,7 @@ custom_components/adaptive_audio/
   schedule.py     PURE math (no HA import): sigmoid shape, anchors/transitions, custom points, windows
   curve.py        options dict -> volume-at-minute function + marks; shared by controller, sensor, card
   controller.py   per-entry state + event handling (player state changes, quiet entity, 1-min tick/adapt)
+  simulate.py     PURE: one speaker's day under the controller's rules, for the tester; change it with controller.py
   __init__.py     setup; reloads on options change except LIVE_OPTIONS (the number entities)
   config_flow.py  setup and Configure share one page of collapsible sections; submit saves
                   (re-shown only for a missing name/speaker or a broken schedule)
@@ -30,32 +31,47 @@ custom_components/adaptive_audio/
   strings.json + translations/en.json   generated: edit dev/gen_strings.py, run it
 tests/test_schedule.py   plain unittest for the pure schedule math (also collected by pytest)
 tests/conftest.py        fixtures: fake speakers that record volume_set calls, frozen Vancouver clock, gated ramp sleep
+                         (`at(freezer, h, m)` is local wall-clock time from the tzdata; never hard-code an offset)
 tests/test_controller.py one test per rule in the controller.py docstring
-tests/test_config_flow.py  setup/Configure page: errors and saved options
+tests/test_config_flow.py  setup/Configure page: errors, saved options, the tester link
+tests/test_simulate.py   parity: each scenario through simulate.run and the real controller must give identical volume calls
 pytest.ini  requirements_test.txt   asyncio_mode=auto; phcc pinned (needs Python 3.14)
-dev/docker-compose.yml   throwaway HA on raccoon:8126; dev/config/ is gitignored
+dev/docker-compose.yml   throwaway HA on raccoon:8126 (dev/config/ is gitignored) + the local tester on :8127
 dev/e2e.py               end-to-end checks against the dev HA's demo speakers
 site/                    the online tester (GitHub Pages): index.html + app.js + style.css (lukas.css
-                         + a Home Assistant style); runs const/schedule/curve.py in Pyodide
+                         + a Home Assistant style); runs const/schedule/curve/simulate.py in Pyodide
 .github/workflows/validate.yml  hassfest, HACS validation and pytest on every push and PR
-.github/workflows/pages.yml   publishes site/ + those three .py files into py/ on push to main
+.github/workflows/pages.yml   publishes site/ + those four .py files into py/ on push to main
 ```
 
 ## Online tester
 
-https://lukasscarfe.github.io/adaptive-audio/ draws the curve from the integration's own
-`curve.builder`, so keep `schedule.py`, `curve.py` and `const.py` free of HA imports. Settings ride in
-the URL hash (base64url JSON of the stored options, plus `rise`/`set`); `config_flow.tester_url`
-builds the link at the top of the setup page, with time entities and sun times resolved to today.
-Preview locally: copy `site/` and the three .py files (into `py/`) to a scratch folder and serve it
-with `python3 -m http.server`; screenshot with `~/scripts/screenshot.sh` (`?style=ha`, `?theme=light`).
+https://lukasscarfe.github.io/adaptive-audio/ has every Configure setting except the speakers. It
+draws the day's curve from the integration's own `curve.builder`, and below it simulates one
+speaker's day (play, stop, hand changes, switches, entity changes) with `simulate.run`. Keep
+`schedule.py`, `curve.py`, `simulate.py` and `const.py` free of HA imports.
+
+`simulate.py` restates the controller's rules without HA. When a rule in `controller.py` changes,
+change `simulate.py` the same way and add a scenario to `tests/test_simulate.py`; that test fails
+if the two disagree on any volume call or its timing. Linked entities are stand-ins in the tester:
+a time entity is "a time helper" (its time in `entities`) or `sensor.sun_next_rising`/`setting`
+(read from the page's sunrise and sunset); the quiet and night cap entities have a state you
+change during the simulated day.
+
+Settings ride in the URL hash (base64url JSON of the stored options, plus `rise`/`set`,
+`entities` and the simulated day `sim`). `config_flow.tester_url` builds the link at the top of
+the setup page from every page option, with today's sun times and linked entity values.
+**Local copy:** http://raccoon:8127 serves the tester straight from the checkout (the `tester`
+service in `dev/docker-compose.yml`, Caddy, config in `dev/Caddyfile`). Edits to `site/` or the
+four .py files show on the next reload; no copying or restart. Screenshot it with
+`~/scripts/screenshot.sh http://192.168.1.241:8127/` (`?style=ha`, `?theme=light`).
 
 ## Dev loop
 
 Production HA is off-box and raccoon can't restart it, so develop against the dev container.
 
 ```bash
-docker compose -f dev/docker-compose.yml up -d        # http://raccoon:8126, user dev / devdevdev
+docker compose -f dev/docker-compose.yml up -d        # HA http://raccoon:8126 (dev / devdevdev), tester :8127
 docker compose -f dev/docker-compose.yml restart      # after Python edits
 python3 tests/test_schedule.py                        # pure math, no dependencies
 python3 dev/e2e.py <token-file>                       # needs an entry with demo living_room + walkman

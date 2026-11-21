@@ -17,6 +17,7 @@ def page(name: str | None = "Living room", players=(A,), **sections) -> dict:
             "players": list(players),
             "skip_sources": "",
             "idle_gap": d["idle_gap"],
+            "adapt": d["adapt"],
             "autoreset": d["autoreset"],
             "max_rate": d["max_rate"],
         },
@@ -101,3 +102,34 @@ async def test_overlapping_ramps_are_refused(hass, speakers):
     )
     assert result["type"] == "form"
     assert result["errors"] == {"base": "bad_schedule"}
+
+
+async def test_tester_link_carries_every_setting(hass):
+    """The tester link holds every option on the page but the speakers, plus what the linked
+    entities hold now, so the tester can stand in for them."""
+    import base64
+    import json
+
+    from custom_components.adaptive_audio.config_flow import FLAT, tester_url
+
+    hass.states.async_set("input_datetime.wake", "07:05:00", {"has_time": True, "hour": 7, "minute": 5})
+    hass.states.async_set("input_select.mode", "Night")
+    options = {
+        **DEFAULTS,
+        "players": [A],
+        "skip_sources": "Line In",
+        "wake": {"entity": "input_datetime.wake", "time": "07:30:00", "ramp": 45},
+        "quiet_entity": "input_select.mode",
+        "quiet_state": "Night",
+        "cap_entity": "input_boolean.missing",
+    }
+    url = tester_url(hass, options)
+    raw = url.split("#", 1)[1]
+    got = json.loads(base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4)))
+    page_keys = {str(k) for schema in FLAT.values() for k in schema.schema} - {"players"}
+    present = {k for k in page_keys if k in options}
+    assert present <= set(got)
+    assert "players" not in got
+    assert got["skip_sources"] == "Line In"
+    assert got["wake"] == {"entity": "input_datetime.wake", "time": "07:30:00", "ramp": 45}
+    assert got["entities"] == {"input_datetime.wake": "07:05", "input_select.mode": "Night"}

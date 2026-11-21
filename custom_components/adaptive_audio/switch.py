@@ -1,5 +1,6 @@
-"""Enabled, Quiet, Adapt and Night cap switches. The first three restore their state across
-restarts; Night cap is the `cap_enabled` option, so it is saved with the entry."""
+"""Enabled, Quiet, Adjust while playing and Night cap switches. Enabled and Quiet restore their
+state across restarts; Adjust while playing and Night cap are the `adapt` and `cap_enabled`
+options, so they are saved with the entry (and set on the setup and Configure page too)."""
 
 from __future__ import annotations
 
@@ -11,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import CONF_CAP_ENABLED
+from .const import CONF_ADAPT, CONF_CAP_ENABLED
 from .entity import AdaptiveAudioEntity
 
 
@@ -66,31 +67,40 @@ class QuietSwitch(AdaptiveAudioEntity, SwitchEntity, RestoreEntity):
 
 
 class AdaptSwitch(AdaptiveAudioEntity, SwitchEntity, RestoreEntity):
-    """Adapt while playing: glide playing speakers along the curve. A hand change takes a
-    speaker over until its next fresh start (or the auto-reset time)."""
+    """Adjust while playing: glide playing speakers along the curve. A hand change takes a
+    speaker over until its next fresh start (or the auto-reset time). It is the `adapt` option."""
 
     _attr_icon = "mdi:chart-bell-curve-cumulative"
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        if (last := await self.async_get_last_state()) is not None:
-            self.controller.adapt = last.state == STATE_ON
+        # Before 0.8.1 this was a restored switch, off by default. Keep what it was set to.
+        entry = self.controller.entry
+        if CONF_ADAPT not in entry.options and (last := await self.async_get_last_state()) is not None:
+            self.hass.config_entries.async_update_entry(
+                entry, options={**entry.options, CONF_ADAPT: last.state == STATE_ON}
+            )
+            self.controller.loaded_options = dict(entry.options)
 
     @property
     def is_on(self) -> bool:
         return self.controller.adapt
+
+    def _set(self, on: bool) -> None:
+        entry = self.controller.entry
+        self.hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_ADAPT: on})
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"taken_over": sorted(self.controller.manual)}
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        self.controller.adapt = True
         self.controller.manual.clear()
+        self._set(True)
         self.controller.notify()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        self.controller.adapt = False
+        self._set(False)
         self.controller.notify()
 
 

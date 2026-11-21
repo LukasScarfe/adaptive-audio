@@ -1,0 +1,20 @@
+# The online tester, served from the checkout for local testing (http://raccoon:8127).
+# site/ is the page; /py/ is the integration folder, which the page loads const, schedule,
+# curve and simulate.py from (the GitHub Pages build copies those four into py/ instead).
+# no-store, so an edit shows on the next reload.
+:80 {
+	header Cache-Control "no-store"
+	@py path /py/const.py /py/schedule.py /py/curve.py /py/simulate.py
+	handle @py {
+		uri strip_prefix /py
+		root * /srv/integration
+		file_server
+	}
+	handle /py/* {
+		respond 404
+	}
+	handle {
+		root * /srv/site
+		file_server
+	}
+}

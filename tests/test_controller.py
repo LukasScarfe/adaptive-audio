@@ -131,7 +131,7 @@ async def test_adapt_off_leaves_volume_alone(hass, speakers, freezer, ramp):
     at(freezer, 12)
     speakers.create(A, "playing", 0.5)
     await hass.async_block_till_done()
-    await setup_entry(hass, max_rate=3)
+    await setup_entry(hass, max_rate=3, adapt=False)
     await tick(hass, freezer, 5)
     assert speakers.calls == []
 
@@ -185,7 +185,7 @@ async def test_quiet_off_gradual_even_with_adapt_off(hass, speakers, freezer, ra
     at(freezer, 12)
     speakers.create(A, "playing", 0.4)
     await hass.async_block_till_done()
-    entry = await setup_entry(hass, quiet_instant=False, max_rate=3)
+    entry = await setup_entry(hass, quiet_instant=False, max_rate=3, adapt=False)
     await _quiet(hass, entry, True)
     await speakers.hand_change(A, 0.08)  # a hand change during quiet takes the speaker over
     assert attrs(hass, entry)["taken_over"] == [A]
@@ -212,6 +212,18 @@ async def test_night_cap_pulls_back_only_in_cap_hours(hass, speakers, freezer):
     await speakers.hand_change(A, 0.7)
     assert speakers.calls == [(A, 0.25)]
     assert attrs(hass, entry)["cap_active"] is True
+
+
+# 14b
+async def test_night_cap_applies_when_cap_hours_begin_mid_play(hass, speakers, freezer):
+    at(freezer, 21, 58)
+    speakers.create(A, "playing", 0.35)
+    await hass.async_block_till_done()
+    await setup_entry(hass, cap_enabled=True, cap_start="22:00:00", cap_end="07:00:00", cap_volume=20, adapt=False)
+    await tick(hass, freezer, 1)  # 21:59: not cap hours yet, and adapting is off
+    assert speakers.calls == []
+    await tick(hass, freezer, 1)  # 22:00: cap hours begin
+    assert speakers.calls == [(A, 0.2)]
 
 
 # 15
@@ -260,3 +272,27 @@ async def test_apply_button_sets_every_speaker_that_is_not_off(hass, speakers, f
     await hass.async_block_till_done()
     await _press(hass, entry, "apply")
     assert speakers.calls == [(A, 0.4)]
+
+
+# Adjust while playing is an option now (default on); before 0.8.1 it was a restored switch.
+async def test_adapt_defaults_on_and_the_switch_sets_the_option(hass, speakers, freezer):
+    entry = await setup_entry(hass)
+    assert attrs(hass, entry)["adapt"] is True
+    await switch(hass, entry, "adapt", False)
+    assert entry.options["adapt"] is False
+    assert attrs(hass, entry)["adapt"] is False
+
+
+async def test_old_switch_state_becomes_the_option(hass, speakers, freezer):
+    from pytest_homeassistant_custom_component.common import mock_restore_cache
+
+    from homeassistant.core import State
+
+    entry = await setup_entry(hass)
+    eid = entity_id(hass, entry, "adapt")
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass.config_entries.async_update_entry(entry, options={k: v for k, v in entry.options.items() if k != "adapt"})
+    mock_restore_cache(hass, [State(eid, "off")])
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.options["adapt"] is False

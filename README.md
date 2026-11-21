@@ -63,15 +63,17 @@ door, keeps whatever volume you had.
 Change a speaker's volume yourself and Adaptive Audio leaves it there. The next time the speaker
 starts playing after a break, it goes back to the schedule.
 
-### Adjust while playing (optional)
+### Adjust while playing (on by default)
 
-By default the volume is only set when playback starts. Turn on **Adjust while playing** and
-speakers that are already playing slowly follow the schedule too: as the evening gets later, the
-volume drifts down. It moves in 1% steps, never faster than a rate you set (10% a minute by
+With **Adjust while playing** on, speakers that are already playing slowly follow the schedule
+too: as the evening gets later, the volume drifts down. It moves in 1% steps, never faster than a rate you set (10% a minute by
 default, so one step every 6 seconds), so you won't notice a jump.
 
 If you change a speaker's volume while this is on, that speaker stops following the schedule
 until it next starts playing, or after a number of minutes you choose.
+
+Turn it off, on the setup page or with its switch, and the volume is only set when playback
+starts.
 
 ### Quiet mode
 
@@ -86,8 +88,9 @@ volume instantly** to have them jump straight back instead.
 
 ### Night cap (optional)
 
-A maximum volume during set hours, for example no louder than 25% between 22:00 and 07:00. If
-someone turns a speaker up past it, it goes straight back down to the cap. The night cap is on
+A maximum volume during set hours, for example no louder than 25% between 22:00 and 07:00. A
+speaker that is playing louder when the hours begin goes straight down to the cap, and if someone
+turns a speaker up past it, it goes straight back down too. The night cap is on
 while its switch is on, or while another entity you pick is on. The start and end can be clock
 times or come from a time helper.
 
@@ -149,7 +152,11 @@ another one.
 To change it later, select **Configure** on the integration. It shows the same page. The link at
 the top of the page opens the [online tester](https://lukasscarfe.github.io/adaptive-audio/)
 with your saved settings filled in, so you can try changes and see the day's volume before you
-save them.
+save them. It has every setting on the page except the speakers. Below the chart, **Try it on a
+speaker** plays out a whole day for one speaker: say when it plays and stops, when someone turns it
+up, when quiet mode or the night cap goes on, and see what Adaptive Audio would do, minute by
+minute. Entities you link to (time helpers, Sun next rising, a quiet mode entity) are stand-ins
+there whose values you set yourself.
 
 <img src="docs/images/configure.png" alt="The Configure page, with the Schedule section open" width="400"> <img src="docs/images/tester.png" alt="The online tester: settings on the left, the day's volume as a chart on the right" width="420">
 
@@ -162,6 +169,7 @@ save them.
 | Speakers | The speakers this controls. | |
 | Leave these inputs alone | Inputs whose volume is never changed, separated by commas, for example `Line In`. | none |
 | Reset after being stopped for | How long a speaker must be stopped before it starts at the scheduled volume again. | 10 min |
+| Adjust while playing | Playing speakers keep following the schedule. Same as the Adjust while playing switch. | on |
 | Follow the schedule again after | With Adjust while playing on: how long a speaker you changed by hand is left alone. 0 waits until it next starts playing. | 0 |
 | Never change the volume faster than | The most the volume moves each minute, in 1% steps, while Adjust while playing is on and when quiet mode turns off. | 10%/min |
 

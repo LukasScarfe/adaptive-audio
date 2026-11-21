@@ -8,6 +8,7 @@ CONF_IDLE_GAP = "idle_gap"  # minutes not playing before the next play counts as
 CONF_SKIP_SOURCES = "skip_sources"  # comma-separated; e.g. "Line In"
 CONF_AUTORESET = "autoreset"  # minutes after a hand change to resume adapting; 0 = next fresh start
 CONF_MAX_RATE = "max_rate"  # % per minute at most while adjusting during playback
+CONF_ADAPT = "adapt"  # Adjust while playing: follow the schedule mid-play (also the switch)
 
 # Schedule
 CONF_SCHEDULE_TYPE = "schedule_type"  # "simple" or "custom"
@@ -35,8 +36,9 @@ CONF_CAP_END = "cap_end"
 CONF_CAP_END_ENTITY = "cap_end_entity"
 CONF_CAP_VOLUME = "cap_volume"
 
-# Options the number and Night cap entities change live; changing only these doesn't reload.
-LIVE_OPTIONS = {CONF_QUIET_VOLUME, CONF_CAP_VOLUME, CONF_CAP_ENABLED}
+# Options the number, Night cap and Adjust while playing entities change live; changing only
+# these doesn't reload.
+LIVE_OPTIONS = {CONF_QUIET_VOLUME, CONF_CAP_VOLUME, CONF_CAP_ENABLED, CONF_ADAPT}
 
 SCHEDULE_TYPES = ["simple", "custom"]
 CURVES = ["sigmoid", "linear", "steps"]
@@ -46,6 +48,7 @@ DEFAULTS = {
     CONF_SKIP_SOURCES: "",
     CONF_AUTORESET: 0,
     CONF_MAX_RATE: 10,
+    CONF_ADAPT: True,
     CONF_SCHEDULE_TYPE: "simple",
     CONF_CURVE: "sigmoid",
     CONF_DAY_VOLUME: 40,
